@@ -25,9 +25,26 @@ object FormatUtils {
         return clean.toLongOrNull() ?: 0L
     }
 
+    fun toPersianDigits(input: String): String {
+        val persianDigits = charArrayOf('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹')
+        val builder = StringBuilder()
+        for (ch in input) {
+            if (ch in '0'..'9') {
+                builder.append(persianDigits[ch - '0'])
+            } else {
+                builder.append(ch)
+            }
+        }
+        return builder.toString()
+    }
+
+    fun getCurrencyLabel(currencyUnit: String = "TOMAN"): String {
+        return if (currencyUnit == "RIAL") "ریال" else "تومان"
+    }
+
     fun formatCurrency(amount: Long, currencyUnit: String = "TOMAN"): String {
-        val formatted = formatNumber(amount)
-        val unitLabel = if (currencyUnit == "RIAL") "ریال" else "تومان"
+        val formatted = toPersianDigits(formatNumber(amount))
+        val unitLabel = getCurrencyLabel(currencyUnit)
         return "$formatted $unitLabel"
     }
 

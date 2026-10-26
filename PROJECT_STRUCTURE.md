@@ -113,8 +113,9 @@
 #### ۴.۸. ماژول‌ها و ابزارهای کاربردی (`/app/src/main/java/com/example/util/`)
 | مسیر کامل نسبی | وظیفه و کاربرد | مسئولیت اصلی و ارتباط با سایر بخش‌ها |
 | :--- | :--- | :--- |
+| `/app/src/main/java/com/example/util/CallLogHelper.kt` | ابزار استعلام تاریخچه تماس‌های اندروید | بررسی دسترسی READ_CALL_LOG و استخراج جدیدترین تاریخ تماس ثبت‌شده با هر شماره تلفن و تبدیل به تاریخ جلالی. |
 | `/app/src/main/java/com/example/util/JalaliDate.kt` | گاه‌شماری و محاسبات تاریخ جلالی | تبدیل تاریخ میلادی به هجری شمسی بدون وابستگی به java.time با پشتیبانی از API 24 به بالا. |
-| `/app/src/main/java/com/example/util/FormatUtils.kt` | فرمت‌بندی اعداد و مبالغ پولی | جداسازی ۳ رقمی ارقام، تبدیل اعداد به حروف فارسی و تجزیه ورودی‌های پولی. |
+| `/app/src/main/java/com/example/util/FormatUtils.kt` | فرمت‌بندی اعداد و مبالغ پولی | جداسازی ۳ رقمی ارقام، تبدیل ارقام به فارسی، برچسب‌های پولی و تبدیل اعداد به حروف. |
 | `/app/src/main/java/com/example/util/PdfGenerator.kt` | تولید اسناد رسمی PDF | خروجی استاندارد و چاپ‌پذیر برای فاکتورهای کارگاهی و قراردادهای حقوقی تابلوسازی. |
 | `/app/src/main/java/com/example/util/BackupRestoreManager.kt` | موتور پشتیبان‌گیری و بازیابی پایگاه داده | استخراج دیتابیس SQLite در قالب فایل JSON، رمزنگاری و اعتبارسنجی هنگام بازگردانی. |
 | `/app/src/main/java/com/example/util/CrashHandler.kt` | ناظر خطاهای ناشناخته سراسری | مدیریت UncaughtExceptionHandler و ثبت اطلاعات خطا در فایل لاگ و فراخوانی صفحه کرش. |
