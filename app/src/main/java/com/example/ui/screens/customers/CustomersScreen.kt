@@ -39,6 +39,8 @@ import com.example.data.local.entities.CustomerEntity
 import com.example.ui.components.common.AppTopBar
 import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.components.common.EmptyStateView
+import com.example.ui.theme.MoneyNegative
+import com.example.ui.theme.MoneyPositive
 import com.example.ui.viewmodels.SignageViewModel
 import com.example.util.CallLogHelper
 import com.example.util.FormatUtils
@@ -192,8 +194,8 @@ fun CustomersScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Surface(
                         shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFF1F5F9),
-                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -205,7 +207,7 @@ fun CustomersScreen(
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                tint = Color(0xFF64748B),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -216,14 +218,16 @@ fun CustomersScreen(
                                     Text(
                                         "جستجوی نام کارفرما یا شماره تماس...",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = Color(0xFF94A3B8)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                     )
                                 },
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                                 ),
                                 singleLine = true,
                                 modifier = Modifier
@@ -238,7 +242,7 @@ fun CustomersScreen(
                                     Icon(
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "پاک کردن",
-                                        tint = Color(0xFF64748B),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -363,39 +367,43 @@ private fun SummaryCardsRow(
     settledProjectsCount: Int,
     settledCustomersCount: Int
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val trackBgColor = MaterialTheme.colorScheme.surfaceVariant
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Right card: کل کارفرمایان
+        // Right card in RTL: کل کارفرمایان
         StatKpiCard(
             modifier = Modifier.weight(1f),
             title = "کل کارفرمایان",
             valueText = FormatUtils.toPersianDigits(totalCustomers.toString()),
             valueSuffix = "نفر",
             icon = Icons.Default.Group,
-            iconTint = Color(0xFF1D4ED8),
-            valueColor = Color(0xFF0F172A),
-            progressBarColor = Color(0xFF1D4ED8),
-            progressTrackColor = Color(0xFFE2E8F0),
+            iconTint = primaryColor,
+            valueColor = onSurfaceColor,
+            progressBarColor = primaryColor,
+            progressTrackColor = trackBgColor,
             progressRatio = if (totalCustomers > 0) 0.75f else 0f
         )
 
-        // Center card: مجموع مطالبات
+        // Center card in RTL: مجموع مطالبات
         StatKpiCard(
             modifier = Modifier.weight(1f),
             title = "مجموع مطالبات",
             valueText = FormatUtils.toPersianDigits(FormatUtils.formatNumber(totalDebt)),
             valueSubText = "${FormatUtils.getCurrencyLabel(currencyUnit)} باز",
             icon = Icons.Default.TrendingUp,
-            iconTint = Color(0xFFB91C1C),
-            valueColor = Color(0xFFB91C1C),
-            progressBarColor = Color(0xFF991B1B),
-            progressTrackColor = Color(0xFFFEE2E2),
+            iconTint = MoneyNegative,
+            valueColor = MoneyNegative,
+            progressBarColor = MoneyNegative,
+            progressTrackColor = MoneyNegative.copy(alpha = 0.18f),
             progressRatio = if (totalDebt > 0) 0.65f else 0f
         )
 
-        // Left card: تسویه‌شده‌ها
+        // Left card in RTL: تسویه‌شده‌ها
         StatKpiCard(
             modifier = Modifier.weight(1f),
             title = "تسویه‌شده‌ها",
@@ -405,10 +413,10 @@ private fun SummaryCardsRow(
             ),
             valueSuffix = if (settledProjectsCount > 0) "پروژه" else "نفر",
             icon = Icons.Default.CheckCircle,
-            iconTint = Color(0xFF059669),
-            valueColor = Color(0xFF0D9488),
-            progressBarColor = Color(0xFF059669),
-            progressTrackColor = Color(0xFFDCFCE7),
+            iconTint = MoneyPositive,
+            valueColor = MoneyPositive,
+            progressBarColor = MoneyPositive,
+            progressTrackColor = MoneyPositive.copy(alpha = 0.18f),
             progressRatio = 1f
         )
     }
@@ -430,9 +438,9 @@ private fun StatKpiCard(
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        border = BorderStroke(1.dp, Color(0xFFEFF3F8)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         modifier = modifier
     ) {
         Column(
@@ -440,24 +448,24 @@ private fun StatKpiCard(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 10.dp)
         ) {
-            // Header: Icon + Title
+            // Header: Title on Start (Right in RTL) + Icon on End (Left in RTL)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(16.dp)
-                )
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF475569)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
@@ -483,7 +491,7 @@ private fun StatKpiCard(
                         text = valueSuffix,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF64748B)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -492,7 +500,7 @@ private fun StatKpiCard(
                 Text(
                     text = valueSubText,
                     fontSize = 10.sp,
-                    color = Color(0xFF64748B),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -545,7 +553,7 @@ private fun FilterChipsRow(
             Surface(
                 onClick = { onFilterSelected(type) },
                 shape = RoundedCornerShape(20.dp),
-                color = if (isSelected) Color(0xFF0F4C81) else Color(0xFFEBF1F7),
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier
                     .weight(1f)
                     .height(38.dp)
@@ -556,7 +564,7 @@ private fun FilterChipsRow(
                         text = label,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else Color(0xFF334E68),
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp
                     )
                 }
@@ -583,9 +591,9 @@ private fun CustomerCard(
     Card(
         onClick = onClick,
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
         modifier = Modifier
             .fillMaxWidth()
             .testTag("customer_item_${customer.id}")
@@ -596,116 +604,34 @@ private fun CustomerCard(
                 .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left Action Buttons (Call + More)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // 1. Right in RTL: Avatar
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape,
+                modifier = Modifier.size(46.dp)
             ) {
-                // More / Menu Button
-                Box {
-                    Surface(
-                        onClick = { menuExpanded = true },
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE2E8F0).copy(alpha = 0.7f),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("customer_menu_btn_${customer.id}")
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "عملیات",
-                                tint = Color(0xFF475569),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        shape = RoundedCornerShape(14.dp),
-                        containerColor = Color.White
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "ویرایش مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1E293B)
-                                )
-                            },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Edit,
-                                    contentDescription = null,
-                                    tint = Color(0xFF2563EB),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onEdit()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "حذف مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFDC2626)
-                                )
-                            },
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = null,
-                                    tint = Color(0xFFDC2626),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onDelete()
-                            }
-                        )
-                    }
-                }
-
-                // Call Button
-                Surface(
-                    onClick = onCall,
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFBBF7D0).copy(alpha = 0.85f),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .testTag("customer_call_btn_${customer.id}")
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Call,
-                            contentDescription = "تماس تلفنی",
-                            tint = Color(0xFF15803D),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Center Info: Name + Status badge + Last call date
+            // 2. Center Info: Name + Status badge + Last call date (Start-aligned for Persian RTL)
             Column(
                 modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.End
+                horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = customer.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E293B),
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -718,17 +644,17 @@ private fun CustomerCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Outlined.ErrorOutline,
+                            contentDescription = null,
+                            tint = MoneyNegative,
+                            modifier = Modifier.size(15.dp)
+                        )
                         Text(
                             text = "بدهکار: ${FormatUtils.formatCurrency(balance, currencyUnit)}",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFB91C1C)
-                        )
-                        Icon(
-                            imageVector = Icons.Outlined.ErrorOutline,
-                            contentDescription = null,
-                            tint = Color(0xFFB91C1C),
-                            modifier = Modifier.size(15.dp)
+                            color = MoneyNegative
                         )
                     }
                 } else {
@@ -736,17 +662,17 @@ private fun CustomerCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Outlined.CheckCircle,
+                            contentDescription = null,
+                            tint = MoneyPositive,
+                            modifier = Modifier.size(15.dp)
+                        )
                         Text(
                             text = "تسویه‌شده کامل",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF047857)
-                        )
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = Color(0xFF047857),
-                            modifier = Modifier.size(15.dp)
+                            color = MoneyPositive
                         )
                     }
                 }
@@ -761,25 +687,107 @@ private fun CustomerCard(
                 Text(
                     text = callInfoText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF94A3B8)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Avatar on Right (RTL start)
-            Surface(
-                color = Color(0xFFDBEAFE),
-                shape = CircleShape,
-                modifier = Modifier.size(46.dp)
+            // 3. Left in RTL: Action Buttons (Call + More)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = Color(0xFF2563EB),
-                        modifier = Modifier.size(24.dp)
-                    )
+                // Call Button
+                Surface(
+                    onClick = onCall,
+                    shape = RoundedCornerShape(12.dp),
+                    color = MoneyPositive.copy(alpha = 0.16f),
+                    modifier = Modifier
+                        .size(40.dp)
+                        .testTag("customer_call_btn_${customer.id}")
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Call,
+                            contentDescription = "تماس تلفنی",
+                            tint = MoneyPositive,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                // More / Menu Button
+                Box {
+                    Surface(
+                        onClick = { menuExpanded = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("customer_menu_btn_${customer.id}")
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "عملیات",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        shape = RoundedCornerShape(14.dp),
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "ویرایش مشتری",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onEdit()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "حذف مشتری",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onDelete()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -796,58 +804,81 @@ private fun dialCustomerPhone(context: Context, rawPhone: String) {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(name = "Customers Screen Preview", showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "Customers Screen Light Preview", showBackground = true)
 @Composable
-fun CustomersScreenPreview() {
-    com.example.ui.theme.MyApplicationTheme {
-        Surface(color = Color(0xFFF8FAFC)) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            ) {
-                SummaryCardsRow(
-                    totalCustomers = 24,
-                    totalDebt = 18500000L,
-                    currencyUnit = "TOMAN",
-                    settledProjectsCount = 16,
-                    settledCustomersCount = 16
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                FilterChipsRow(
-                    selectedFilter = CustomerFilterType.ALL,
-                    onFilterSelected = {},
-                    totalCount = 24,
-                    debtorsCount = 8,
-                    settledCount = 16
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                CustomerCard(
-                    customer = CustomerEntity(id = "1", name = "مهندس علیرضا رضایی", phone = "09121112233"),
-                    balance = 4250000L,
-                    currencyUnit = "TOMAN",
-                    lastCallDate = null,
-                    hasCallLogPermission = true,
-                    onRequestCallLogPermission = {},
-                    onClick = {},
-                    onCall = {},
-                    onEdit = {},
-                    onDelete = {}
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                CustomerCard(
-                    customer = CustomerEntity(id = "2", name = "خانم سارا محمدی", phone = "09123334455"),
-                    balance = 0L,
-                    currencyUnit = "TOMAN",
-                    lastCallDate = "۱۴۰۴/۰۵/۲۴",
-                    hasCallLogPermission = true,
-                    onRequestCallLogPermission = {},
-                    onClick = {},
-                    onCall = {},
-                    onEdit = {},
-                    onDelete = {}
-                )
+fun CustomersScreenPreviewLight() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                CustomersPreviewContent()
             }
         }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "Customers Screen Dark Preview", showBackground = true)
+@Composable
+fun CustomersScreenPreviewDark() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "DARK") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                CustomersPreviewContent()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomersPreviewContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        SummaryCardsRow(
+            totalCustomers = 24,
+            totalDebt = 18500000L,
+            currencyUnit = "TOMAN",
+            settledProjectsCount = 16,
+            settledCustomersCount = 16
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        FilterChipsRow(
+            selectedFilter = CustomerFilterType.ALL,
+            onFilterSelected = {},
+            totalCount = 24,
+            debtorsCount = 8,
+            settledCount = 16
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        CustomerCard(
+            customer = CustomerEntity(id = "1", name = "مهندس علیرضا رضایی", phone = "09121112233"),
+            balance = 4250000L,
+            currencyUnit = "TOMAN",
+            lastCallDate = null,
+            hasCallLogPermission = true,
+            onRequestCallLogPermission = {},
+            onClick = {},
+            onCall = {},
+            onEdit = {},
+            onDelete = {}
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        CustomerCard(
+            customer = CustomerEntity(id = "2", name = "خانم سارا محمدی", phone = "09123334455"),
+            balance = 0L,
+            currencyUnit = "TOMAN",
+            lastCallDate = "۱۴۰۴/۰۵/۲۴",
+            hasCallLogPermission = true,
+            onRequestCallLogPermission = {},
+            onClick = {},
+            onCall = {},
+            onEdit = {},
+            onDelete = {}
+        )
     }
 }

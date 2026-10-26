@@ -76,7 +76,7 @@
 | مسیر کامل نسبی | وظیفه و کاربرد | مسئولیت اصلی و ارتباط با سایر بخش‌ها |
 | :--- | :--- | :--- |
 | `/app/src/main/java/com/example/ui/screens/dashboard/DashboardScreen.kt` | داشبورد مدیریت کارگاه | خلاصه وضعیت مالی، پروژه‌های فعال، میانبرهای ثبت سریع مشتری/پروژه/دریافتی و هشدارهای کارگاه. |
-| `/app/src/main/java/com/example/ui/screens/customers/CustomersScreen.kt` | صفحه مدیریت مشتریان و کارفرمایان | نمایش فهرست مشتریان با امکان جستجو، مشاهده تراز حساب و ثبت مخاطب جدید. |
+| `/app/src/main/java/com/example/ui/screens/customers/CustomersScreen.kt` | صفحه مدیریت مشتریان و کارفرمایان | نمایش فهرست مشتریان، کارت‌های آماری KPI، فیلتر وضعیت، تراز مالی و استخراج تاریخچه تماس با چیدمان استاندارد RTL و تم پویا. |
 | `/app/src/main/java/com/example/ui/screens/customers/CustomerDetailScreen.kt` | جزئیات پرونده مشتری | نمایش پروژه‌ها، صورتحساب‌ها، سابقه تراکنش‌های مالی و امکان تماس مستقیم با مشتری. |
 | `/app/src/main/java/com/example/ui/screens/customers/CustomerEditDialog.kt` | فرم شیت ثبت و ویرایش مشتری | ورود نام، تلفن، کدملی، آدرس و توضیحات با نوار ثابت ذخیره/انصراف و گارد خروج. |
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectsScreen.kt` | صفحه مدیریت پروژه‌ها و سفارشات | فیلتر بر اساس وضعیت، جستجوی پروژه، کارت‌های پروژه و دکمه ایجاد سفارش جدید. |
