@@ -1,7 +1,10 @@
 package com.example.ui.screens.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Refresh
@@ -19,29 +22,34 @@ import com.example.ui.components.common.*
 import com.example.ui.theme.MyApplicationTheme
 
 /**
- * فرم اختصاصی مدیریت دیتابیس و داده‌های فرضی کارگاه بر اساس بند ۱.۱ و ۱.۲ توافقنامه
+ * صفحه تمام‌صفحه اختصاصی مدیریت دیتابیس و داده‌های فرضی کارگاه بر اساس بند ۱.۱ و ۱.۲ توافقنامه
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DatabaseManagementSettingsSheet(
-    onDismiss: () -> Unit,
+fun DatabaseManagementSettingsScreen(
+    onBack: () -> Unit,
     onClearSampleData: () -> Unit,
     onSeedSampleData: () -> Unit
 ) {
+    BackHandler { onBack() }
+
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     var showSeedConfirmDialog by remember { mutableStateOf(false) }
 
-    AppFormBottomSheet(
-        title = "مدیریت دیتابیس و داده‌های فرضی",
-        subtitle = "پاک‌سازی داده‌های نمونه، آماده‌سازی کارگاه و لود اطلاعات تستی",
-        onDismissRequest = onDismiss,
-        isDirty = false,
-        warnUnsavedChanges = false
-    ) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "مدیریت دیتابیس و داده‌های فرضی",
+                subtitle = "پاک‌سازی داده‌های نمونه، آماده‌سازی کارگاه و لود اطلاعات تستی",
+                onBack = onBack
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Surface(
@@ -53,7 +61,7 @@ fun DatabaseManagementSettingsSheet(
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Storage,
@@ -63,13 +71,13 @@ fun DatabaseManagementSettingsSheet(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "وضعیت دیتابیس و آماده‌سازی برای کار واقعی",
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "نرم‌افزار با اطلاعات فرضی جامع (شامل مشتریان، سفارشات چلنیوم و کامپوزیت، فاکتورها، چک‌ها و قراردادها) راه‌اندازی شده است تا بتوانید گزارشات و محیط برنامه را قبل از ثبت کار واقعی تست کنید.\n\nبرای شروع کار واقعی کارگاه تابلوسازی، دکمه «پاک‌سازی اطلاعات فرضی» را بزنید تا دیتابیس کاملاً سفید و آماده ثبت سفارشات واقعی شود.",
+                        text = "نرم‌افزار با اطلاعات فرضی جامع (شامل مشتریان، سفارشات چلنیوم و کامپوزیت، فاکتورها، چک‌ها و قراردادها) راه‌اندازی شده است تا بتوانید گزارشات و محیط برنامه را قبل از ثبت کار واقعی تست و بررسی کنید.\n\nبرای شروع کار واقعی کارگاه تابلوسازی، دکمه «پاک‌سازی اطلاعات فرضی» را بزنید تا دیتابیس کاملاً سفید و آماده ثبت سفارشات واقعی شما شود.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -86,7 +94,7 @@ fun DatabaseManagementSettingsSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
@@ -96,8 +104,8 @@ fun DatabaseManagementSettingsSheet(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "نکته: با پاک‌سازی اطلاعات فرضی، نام کارگاه، حساب کاربری و دسته‌بندی‌های هزینه پاک نمی‌شوند و محفوظ می‌مانند.",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "نکته مهم: با پاک‌سازی اطلاعات فرضی، نام کارگاه، حساب کاربری و دسته‌بندی‌های هزینه پاک نمی‌شوند و محفوظ می‌مانند.",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -109,6 +117,7 @@ fun DatabaseManagementSettingsSheet(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(48.dp)
                     .testTag("clear_sample_data_sheet_btn")
             ) {
                 Icon(Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(20.dp))
@@ -121,23 +130,12 @@ fun DatabaseManagementSettingsSheet(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(48.dp)
                     .testTag("seed_sample_data_sheet_btn")
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("بارگذاری مجدد اطلاعات نمونه کارگاه")
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("close_database_sheet_btn")
-            ) {
-                Text("بستن")
+                Text("بارگذاری مجدد اطلاعات نمونه کارگاه", fontWeight = FontWeight.SemiBold)
             }
         }
     }
@@ -169,13 +167,29 @@ fun DatabaseManagementSettingsSheet(
     )
 }
 
-@Preview(name = "Database Management Sheet Preview", showBackground = true)
+/**
+ * سازگاری نام قبلی جهت جلوگیری از شکست وابستگی‌ها
+ */
 @Composable
-fun DatabaseManagementSettingsSheetPreview() {
+fun DatabaseManagementSettingsSheet(
+    onDismiss: () -> Unit,
+    onClearSampleData: () -> Unit,
+    onSeedSampleData: () -> Unit
+) {
+    DatabaseManagementSettingsScreen(
+        onBack = onDismiss,
+        onClearSampleData = onClearSampleData,
+        onSeedSampleData = onSeedSampleData
+    )
+}
+
+@Preview(name = "Database Management Screen Preview", showBackground = true)
+@Composable
+fun DatabaseManagementSettingsScreenPreview() {
     MyApplicationTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            DatabaseManagementSettingsSheet(
-                onDismiss = {},
+            DatabaseManagementSettingsScreen(
+                onBack = {},
                 onClearSampleData = {},
                 onSeedSampleData = {}
             )

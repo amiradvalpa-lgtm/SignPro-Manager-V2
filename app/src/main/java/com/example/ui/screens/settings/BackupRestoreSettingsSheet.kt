@@ -1,5 +1,6 @@
 package com.example.ui.screens.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,29 +22,33 @@ import com.example.ui.theme.MyApplicationTheme
 import com.example.util.BackupMetadata
 
 /**
- * فرم اختصاصی پشتیبان‌گیری و بازیابی اطلاعات بر اساس بند ۱.۱ و ۱.۲ توافقنامه
+ * صفحه تمام‌صفحه اختصاصی پشتیبان‌گیری و بازیابی اطلاعات بر اساس بند ۱.۱ و ۱.۲ توافقنامه
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BackupRestoreSettingsSheet(
+fun BackupRestoreSettingsScreen(
     backupList: List<BackupMetadata>,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onCreateBackup: () -> Unit,
     onRestoreBackup: (BackupMetadata) -> Unit
 ) {
+    BackHandler { onBack() }
+
     var backupToRestore by remember { mutableStateOf<BackupMetadata?>(null) }
 
-    AppFormBottomSheet(
-        title = "پشتیبان‌گیری و بازیابی اطلاعات",
-        subtitle = "ذخیره‌سازی امن پایگاه داده و فایل‌های پشتیبان کارگاه",
-        onDismissRequest = onDismiss,
-        isDirty = false,
-        warnUnsavedChanges = false
-    ) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "پشتیبان‌گیری و بازیابی اطلاعات",
+                subtitle = "ذخیره‌سازی امن پایگاه داده و فایل‌های پشتیبان کارگاه",
+                onBack = onBack
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp),
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Surface(
@@ -55,7 +60,7 @@ fun BackupRestoreSettingsSheet(
                 ),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.CloudUpload,
@@ -65,14 +70,14 @@ fun BackupRestoreSettingsSheet(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "حفاظت از اطلاعات کارگاه",
-                            style = MaterialTheme.typography.titleSmall,
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "با ایجاد فایل پشتیبان، تمام اطلاعات مشتریان، سفارشات، فاکتورها، چک‌ها و اسناد مالی در قالب استاندارد JSON در حافظه گوشی ذخیره می‌شود تا در صورت تعویض دستگاه یا مشکل بتوانید اطلاعات را فوراً بازیابی کنید.",
+                        text = "با ایجاد فایل پشتیبان، تمام اطلاعات مشتریان، سفارشات، فاکتورها، چک‌ها و اسناد مالی در قالب استاندارد JSON در حافظه دستگاه ذخیره می‌شود تا در صورت تعویض گوشی یا بروز هرگونه مشکل، اطلاعات فوراً قابل بازیابی باشند.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -84,9 +89,10 @@ fun BackupRestoreSettingsSheet(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height(48.dp)
                     .testTag("create_backup_sheet_btn")
             ) {
-                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("ایجاد فایل پشتیبان جدید (هم‌اکنون)", fontWeight = FontWeight.Bold)
             }
@@ -107,19 +113,21 @@ fun BackupRestoreSettingsSheet(
                     title = "فایل پشتیبانی یافت نشد",
                     message = "برای تهیه اولین نسخه، دکمه «ایجاد فایل پشتیبان جدید» را بزنید.",
                     icon = Icons.Default.Storage,
-                    modifier = Modifier.padding(vertical = 16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 280.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(backupList, key = { it.filePath }) { bkp ->
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(14.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
                                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -129,17 +137,17 @@ fun BackupRestoreSettingsSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = bkp.fileName,
-                                        style = MaterialTheme.typography.bodySmall,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
                                         text = "حجم: ${bkp.fileSizeFormatted} • تاریخ: ${bkp.jalaliDate}",
                                         style = MaterialTheme.typography.labelSmall,
@@ -148,28 +156,16 @@ fun BackupRestoreSettingsSheet(
                                 }
                                 FilledTonalButton(
                                     onClick = { backupToRestore = bkp },
-                                    shape = RoundedCornerShape(8.dp)
+                                    shape = RoundedCornerShape(10.dp)
                                 ) {
-                                    Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text("بازیابی", style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("close_backup_sheet_btn")
-            ) {
-                Text("بستن")
             }
         }
     }
@@ -191,12 +187,30 @@ fun BackupRestoreSettingsSheet(
     )
 }
 
-@Preview(name = "Backup Restore Sheet Preview", showBackground = true)
+/**
+ * سازگاری نام قبلی جهت جلوگیری از شکست وابستگی‌ها
+ */
 @Composable
-fun BackupRestoreSettingsSheetPreview() {
+fun BackupRestoreSettingsSheet(
+    backupList: List<BackupMetadata>,
+    onDismiss: () -> Unit,
+    onCreateBackup: () -> Unit,
+    onRestoreBackup: (BackupMetadata) -> Unit
+) {
+    BackupRestoreSettingsScreen(
+        backupList = backupList,
+        onBack = onDismiss,
+        onCreateBackup = onCreateBackup,
+        onRestoreBackup = onRestoreBackup
+    )
+}
+
+@Preview(name = "Backup Restore Screen Preview", showBackground = true)
+@Composable
+fun BackupRestoreSettingsScreenPreview() {
     MyApplicationTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            BackupRestoreSettingsSheet(
+            BackupRestoreSettingsScreen(
                 backupList = listOf(
                     BackupMetadata(
                         fileName = "AlpaSignage_Backup_14030805_1200.json",
@@ -215,7 +229,7 @@ fun BackupRestoreSettingsSheetPreview() {
                         recordsCount = 38
                     )
                 ),
-                onDismiss = {},
+                onBack = {},
                 onCreateBackup = {},
                 onRestoreBackup = {}
             )

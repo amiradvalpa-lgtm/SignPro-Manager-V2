@@ -1,5 +1,6 @@
 package com.example.ui.screens.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,33 +27,37 @@ import com.example.util.FormatUtils
 import java.util.UUID
 
 /**
- * فرم اختصاصی مدیریت عنوان هزینه‌ها بر اساس بند ۱.۱ و ۱.۲ توافقنامه
+ * صفحه تمام‌صفحه اختصاصی مدیریت عنوان هزینه‌ها بر اساس بند ۱.۱ و ۱.۲ توافقنامه
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseCategoriesSettingsSheet(
+fun ExpenseCategoriesSettingsScreen(
     categories: List<ExpenseCategoryEntity>,
     currencyUnit: String,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onSaveCategory: (ExpenseCategoryEntity, Boolean) -> Unit,
     onDeleteCategory: (ExpenseCategoryEntity) -> Unit,
     warnUnsavedChanges: Boolean = true
 ) {
+    BackHandler { onBack() }
+
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedCategoryForEdit by remember { mutableStateOf<ExpenseCategoryEntity?>(null) }
     var categoryToDelete by remember { mutableStateOf<ExpenseCategoryEntity?>(null) }
 
-    AppFormBottomSheet(
-        title = "مدیریت عنوان هزینه‌ها",
-        subtitle = "پیکربندی عناوین هزینه‌های کارگاهی و مبالغ پیش‌فرض",
-        onDismissRequest = onDismiss,
-        isDirty = false,
-        warnUnsavedChanges = false
-    ) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "مدیریت عنوان هزینه‌ها",
+                subtitle = "پیکربندی عناوین هزینه‌های کارگاهی و مبالغ پیش‌فرض",
+                onBack = onBack
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -61,7 +66,7 @@ fun ExpenseCategoriesSettingsSheet(
             ) {
                 Text(
                     text = "عناوین ثبت‌شده (${categories.size} مورد)",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -70,32 +75,34 @@ fun ExpenseCategoriesSettingsSheet(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.testTag("add_expense_category_btn")
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text("افزودن عنوان جدید", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             if (categories.isEmpty()) {
                 EmptyStateView(
                     title = "عنوان هزینه‌ای تعریف نشده است",
-                    message = "برای تعریف عنوان‌های پرتکرار کارگاه روی دکمه افزودن عنوان جدید کلیک کنید.",
+                    message = "برای تعریف عنوان‌های پرکاربرد کارگاه روی دکمه «افزودن عنوان جدید» کلیک کنید.",
                     icon = Icons.Default.Category,
-                    modifier = Modifier.padding(vertical = 24.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(categories, key = { it.id }) { cat ->
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
                                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -105,21 +112,21 @@ fun ExpenseCategoriesSettingsSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = cat.title,
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold
                                     )
                                     if (cat.defaultAmount > 0) {
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             text = "مبلغ پیش‌فرض: ${FormatUtils.formatCurrency(cat.defaultAmount, currencyUnit)}",
-                                            style = MaterialTheme.typography.labelSmall,
+                                            style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -127,7 +134,7 @@ fun ExpenseCategoriesSettingsSheet(
                                         Spacer(modifier = Modifier.height(2.dp))
                                         Text(
                                             text = cat.description,
-                                            style = MaterialTheme.typography.bodySmall,
+                                            style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
@@ -142,7 +149,7 @@ fun ExpenseCategoriesSettingsSheet(
                                             Icons.Default.Edit,
                                             contentDescription = "ویرایش عنوان",
                                             modifier = Modifier.size(18.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                     IconButton(
@@ -161,18 +168,6 @@ fun ExpenseCategoriesSettingsSheet(
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("close_categories_sheet_btn")
-            ) {
-                Text("بستن")
             }
         }
     }
@@ -205,7 +200,7 @@ fun ExpenseCategoriesSettingsSheet(
         )
     }
 
-    // Delete confirmation dialog
+    // Delete dialog
     DeleteConfirmationDialog(
         show = categoryToDelete != null,
         title = "حذف عنوان هزینه",
@@ -220,34 +215,178 @@ fun ExpenseCategoriesSettingsSheet(
     )
 }
 
-@Preview(name = "Expense Categories Sheet Preview", showBackground = true)
+/**
+ * مودال افزودن و ویرایش عنوان هزینه (مستقر در فایل اختصاصی تنظیمات هزینه طبق اصل ۱.۱ توافقنامه)
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseCategoriesSettingsSheetPreview() {
+fun ExpenseCategoryDialog(
+    category: ExpenseCategoryEntity?,
+    currencyUnit: String,
+    onDismiss: () -> Unit,
+    onSave: (ExpenseCategoryEntity, Boolean) -> Unit,
+    warnUnsavedChanges: Boolean = true
+) {
+    val isNew = category == null
+    var title by remember { mutableStateOf(category?.title ?: "") }
+    var defaultAmount by remember { mutableStateOf(category?.defaultAmount ?: 0L) }
+    var description by remember { mutableStateOf(category?.description ?: "") }
+    var titleError by remember { mutableStateOf<String?>(null) }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    val isDirty = remember(title, defaultAmount, description) {
+        if (isNew) {
+            title.isNotBlank() || defaultAmount > 0L || description.isNotBlank()
+        } else {
+            title != (category?.title ?: "") ||
+                    defaultAmount != (category?.defaultAmount ?: 0L) ||
+                    description != (category?.description ?: "")
+        }
+    }
+
+    val attemptDismiss = {
+        if (warnUnsavedChanges && isDirty) {
+            showUnsavedDialog = true
+        } else {
+            onDismiss()
+        }
+    }
+
+    val executeSave = {
+        if (title.trim().isEmpty()) {
+            titleError = "عنوان هزینه الزامی است."
+        } else {
+            val entity = category?.copy(
+                title = title.trim(),
+                defaultAmount = defaultAmount,
+                description = description.trim()
+            ) ?: ExpenseCategoryEntity(
+                id = UUID.randomUUID().toString(),
+                title = title.trim(),
+                defaultAmount = defaultAmount,
+                description = description.trim()
+            )
+            onSave(entity, isNew)
+        }
+    }
+
+    AppFormBottomSheet(
+        title = if (isNew) "افزودن عنوان هزینه جدید" else "ویرایش عنوان هزینه",
+        subtitle = "تعریف عناوین پرکاربرد هزینه‌های کارگاهی و مبلغ پیش‌فرض",
+        onDismissRequest = onDismiss,
+        isDirty = isDirty,
+        warnUnsavedChanges = warnUnsavedChanges,
+        onAttemptDismiss = attemptDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            PersianTextField(
+                value = title,
+                onValueChange = {
+                    title = it
+                    titleError = null
+                },
+                label = "عنوان هزینه",
+                placeholder = "مثال: کرایه بالابر، ورق کامپوزیت",
+                isError = titleError != null,
+                errorMessage = titleError
+            )
+            CurrencyInputField(
+                amount = defaultAmount,
+                onAmountChange = { defaultAmount = it },
+                label = "مبلغ پیش‌فرض (اختیاری)",
+                currencyUnit = currencyUnit
+            )
+            PersianTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = "توضیحات",
+                placeholder = "توضیح اختیاری در مورد این نوع هزینه"
+            )
+        }
+
+        StickyBottomActionBar(
+            entityName = "عنوان هزینه",
+            saveButtonText = "ذخیره عنوان هزینه",
+            onSave = executeSave,
+            onCancel = onDismiss,
+            isDirty = isDirty,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    if (showUnsavedDialog) {
+        UnsavedChangesDialog(
+            show = true,
+            onSaveAndExit = {
+                showUnsavedDialog = false
+                executeSave()
+            },
+            onDiscardAndExit = {
+                showUnsavedDialog = false
+                onDismiss()
+            },
+            onDismiss = { showUnsavedDialog = false }
+        )
+    }
+}
+
+/**
+ * سازگاری نام قبلی جهت جلوگیری از شکست وابستگی‌ها
+ */
+@Composable
+fun ExpenseCategoriesSettingsSheet(
+    categories: List<ExpenseCategoryEntity>,
+    currencyUnit: String,
+    onDismiss: () -> Unit,
+    onSaveCategory: (ExpenseCategoryEntity, Boolean) -> Unit,
+    onDeleteCategory: (ExpenseCategoryEntity) -> Unit,
+    warnUnsavedChanges: Boolean = true
+) {
+    ExpenseCategoriesSettingsScreen(
+        categories = categories,
+        currencyUnit = currencyUnit,
+        onBack = onDismiss,
+        onSaveCategory = onSaveCategory,
+        onDeleteCategory = onDeleteCategory,
+        warnUnsavedChanges = warnUnsavedChanges
+    )
+}
+
+@Preview(name = "Expense Categories Screen Preview", showBackground = true)
+@Composable
+fun ExpenseCategoriesSettingsScreenPreview() {
     MyApplicationTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            ExpenseCategoriesSettingsSheet(
+            ExpenseCategoriesSettingsScreen(
                 categories = listOf(
                     ExpenseCategoryEntity(
                         id = "1",
-                        title = "ورق کامپوزیت",
-                        defaultAmount = 4500000L,
-                        description = "خرید ورق از بازار آهن"
+                        title = "ورق کامپوزیت آلومینیوم",
+                        defaultAmount = 1450000L,
+                        description = "ورق ضخامت ۰.۳ و ۰.۴ میلیمتر برای زیرسازی"
                     ),
                     ExpenseCategoryEntity(
                         id = "2",
-                        title = "کرایه جرثقیل و بالابر",
-                        defaultAmount = 1800000L,
-                        description = "هزینه نصب در ارتفاع"
+                        title = "پلکسی گلاس تایوانی",
+                        defaultAmount = 2800000L,
+                        description = "رنگ‌های شیری، دوغی و طلایی"
                     ),
                     ExpenseCategoryEntity(
                         id = "3",
-                        title = "ال‌ای‌دی SMD بلوکی",
-                        defaultAmount = 850000L,
-                        description = "روشنایی حروف برجسته"
+                        title = "کرایه بالابر و داربست",
+                        defaultAmount = 1800000L,
+                        description = "نصب حروف در ارتفاع بالای ۴ متر"
                     )
                 ),
-                currencyUnit = "تومان",
-                onDismiss = {},
+                currencyUnit = "TOMAN",
+                onBack = {},
                 onSaveCategory = { _, _ -> },
                 onDeleteCategory = {}
             )

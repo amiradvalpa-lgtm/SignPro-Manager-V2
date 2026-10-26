@@ -36,6 +36,14 @@ import com.example.util.FormatUtils
 import com.example.util.JalaliDate
 import java.util.UUID
 
+enum class SettingsSubScreen {
+    MAIN,
+    EXPENSE_CATEGORIES,
+    PROJECT_STAGES,
+    BACKUP_RESTORE,
+    DATABASE_MANAGEMENT
+}
+
 @Composable
 fun SettingsScreen(
     viewModel: SignageViewModel,
@@ -56,66 +64,129 @@ fun SettingsScreen(
     val recentAudits by viewModel.recentAudits.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
 
+    var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
+
     // Dialog & Sheet states
     var showContractorDialog by remember { mutableStateOf(false) }
     var showUserDialog by remember { mutableStateOf(false) }
-    var showExpenseCategoriesSheet by remember { mutableStateOf(false) }
-    var showProjectStagesSheet by remember { mutableStateOf(false) }
     var showTrashDialog by remember { mutableStateOf(false) }
     var itemToRestore by remember { mutableStateOf<TrashItem?>(null) }
     var showAuditLogsDialog by remember { mutableStateOf(false) }
-    var showBackupRestoreSheet by remember { mutableStateOf(false) }
-    var showDatabaseManagementSheet by remember { mutableStateOf(false) }
 
-    SettingsContent(
-        contractorInfo = contractorInfo,
-        currencyUnit = currencyUnit,
-        themeMode = themeMode,
-        primaryColorKey = primaryColorKey,
-        warnUnsavedChanges = warnUnsavedChanges,
-        isAuthEnabled = isAuthEnabled,
-        isBiometricEnabled = isBiometricEnabled,
-        categoriesCount = categories.size,
-        stagesCount = stages.size,
-        backupCount = backupList.size,
-        trashCount = trashItems.size,
-        auditsCount = recentAudits.size,
-        onBack = onBack,
-        onEditContractor = { showContractorDialog = true },
-        onSetCurrency = { viewModel.setCurrencyUnit(it) },
-        onSetTheme = { viewModel.setThemeMode(it) },
-        onSetPrimaryColor = { viewModel.setPrimaryColorKey(it) },
-        onSetWarnUnsaved = { viewModel.setWarnUnsavedChanges(it) },
-        onOpenExpenseCategories = { showExpenseCategoriesSheet = true },
-        onOpenProjectStages = { showProjectStagesSheet = true },
-        onOpenTrash = { showTrashDialog = true },
-        onOpenAuditLogs = { showAuditLogsDialog = true },
-        onTogglePin = { checked ->
-            val user = currentUser
-            viewModel.updateSecuritySettings(
-                pinEnabled = checked,
-                biometricEnabled = isBiometricEnabled,
-                newPasswordRaw = null,
-                hint = user?.securityHint ?: "1234",
-                fullName = user?.fullName ?: "امیرحسین حسنخانی",
-                username = user?.username ?: "admin"
+    when (currentSubScreen) {
+        SettingsSubScreen.MAIN -> {
+            SettingsContent(
+                contractorInfo = contractorInfo,
+                currencyUnit = currencyUnit,
+                themeMode = themeMode,
+                primaryColorKey = primaryColorKey,
+                warnUnsavedChanges = warnUnsavedChanges,
+                isAuthEnabled = isAuthEnabled,
+                isBiometricEnabled = isBiometricEnabled,
+                categoriesCount = categories.size,
+                stagesCount = stages.size,
+                backupCount = backupList.size,
+                trashCount = trashItems.size,
+                auditsCount = recentAudits.size,
+                onBack = onBack,
+                onEditContractor = { showContractorDialog = true },
+                onSetCurrency = { viewModel.setCurrencyUnit(it) },
+                onSetTheme = { viewModel.setThemeMode(it) },
+                onSetPrimaryColor = { viewModel.setPrimaryColorKey(it) },
+                onSetWarnUnsaved = { viewModel.setWarnUnsavedChanges(it) },
+                onOpenExpenseCategories = { currentSubScreen = SettingsSubScreen.EXPENSE_CATEGORIES },
+                onOpenProjectStages = { currentSubScreen = SettingsSubScreen.PROJECT_STAGES },
+                onOpenTrash = { showTrashDialog = true },
+                onOpenAuditLogs = { showAuditLogsDialog = true },
+                onTogglePin = { checked ->
+                    val user = currentUser
+                    viewModel.updateSecuritySettings(
+                        pinEnabled = checked,
+                        biometricEnabled = isBiometricEnabled,
+                        newPasswordRaw = null,
+                        hint = user?.securityHint ?: "1234",
+                        fullName = user?.fullName ?: "امیرحسین حسنخانی",
+                        username = user?.username ?: "admin"
+                    )
+                },
+                onToggleBiometric = { checked ->
+                    val user = currentUser
+                    viewModel.updateSecuritySettings(
+                        pinEnabled = isAuthEnabled,
+                        biometricEnabled = checked,
+                        newPasswordRaw = null,
+                        hint = user?.securityHint ?: "1234",
+                        fullName = user?.fullName ?: "امیرحسین حسنخانی",
+                        username = user?.username ?: "admin"
+                    )
+                },
+                onEditUserSecurity = { showUserDialog = true },
+                onOpenBackupRestore = { currentSubScreen = SettingsSubScreen.BACKUP_RESTORE },
+                onOpenDatabaseManagement = { currentSubScreen = SettingsSubScreen.DATABASE_MANAGEMENT }
             )
-        },
-        onToggleBiometric = { checked ->
-            val user = currentUser
-            viewModel.updateSecuritySettings(
-                pinEnabled = isAuthEnabled,
-                biometricEnabled = checked,
-                newPasswordRaw = null,
-                hint = user?.securityHint ?: "1234",
-                fullName = user?.fullName ?: "امیرحسین حسنخانی",
-                username = user?.username ?: "admin"
+        }
+        SettingsSubScreen.EXPENSE_CATEGORIES -> {
+            ExpenseCategoriesSettingsScreen(
+                categories = categories,
+                currencyUnit = currencyUnit,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onSaveCategory = { entity, isNew ->
+                    viewModel.saveExpenseCategory(entity, isNew) {}
+                },
+                onDeleteCategory = { entity ->
+                    viewModel.deleteExpenseCategory(entity) {}
+                },
+                warnUnsavedChanges = warnUnsavedChanges
             )
-        },
-        onEditUserSecurity = { showUserDialog = true },
-        onOpenBackupRestore = { showBackupRestoreSheet = true },
-        onOpenDatabaseManagement = { showDatabaseManagementSheet = true }
-    )
+        }
+        SettingsSubScreen.PROJECT_STAGES -> {
+            ProjectStagesSettingsScreen(
+                stages = stages,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onSaveStage = { entity, isNew ->
+                    viewModel.saveStage(entity, isNew) {}
+                },
+                onDeleteStage = { entity ->
+                    viewModel.deleteStage(entity) {}
+                },
+                onReorderStages = { reordered ->
+                    viewModel.reorderStages(reordered)
+                },
+                warnUnsavedChanges = warnUnsavedChanges
+            )
+        }
+        SettingsSubScreen.BACKUP_RESTORE -> {
+            BackupRestoreSettingsScreen(
+                backupList = backupList,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onCreateBackup = {
+                    viewModel.performBackup { success, msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                },
+                onRestoreBackup = { b ->
+                    viewModel.performRestore(b.filePath) { success, msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
+        }
+        SettingsSubScreen.DATABASE_MANAGEMENT -> {
+            DatabaseManagementSettingsScreen(
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onClearSampleData = {
+                    viewModel.clearSampleData {
+                        Toast.makeText(context, "اطلاعات فرضی با موفقیت پاک شد و دیتابیس آماده کار است.", Toast.LENGTH_LONG).show()
+                    }
+                },
+                onSeedSampleData = {
+                    viewModel.seedSampleData {
+                        Toast.makeText(context, "اطلاعات فرضی تابلوسازی با موفقیت بارگذاری شد.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+    }
 
     // Contractor Info Dialog
     if (showContractorDialog) {
@@ -152,40 +223,6 @@ fun SettingsScreen(
         )
     }
 
-    // Expense Categories Settings Sheet
-    if (showExpenseCategoriesSheet) {
-        ExpenseCategoriesSettingsSheet(
-            categories = categories,
-            currencyUnit = currencyUnit,
-            warnUnsavedChanges = warnUnsavedChanges,
-            onDismiss = { showExpenseCategoriesSheet = false },
-            onSaveCategory = { entity, isNew ->
-                viewModel.saveExpenseCategory(entity, isNew) {}
-            },
-            onDeleteCategory = { entity ->
-                viewModel.deleteExpenseCategory(entity) {}
-            }
-        )
-    }
-
-    // Project Stages Settings Sheet
-    if (showProjectStagesSheet) {
-        ProjectStagesSettingsSheet(
-            stages = stages,
-            warnUnsavedChanges = warnUnsavedChanges,
-            onDismiss = { showProjectStagesSheet = false },
-            onSaveStage = { entity, isNew ->
-                viewModel.saveStage(entity, isNew) {}
-            },
-            onDeleteStage = { entity ->
-                viewModel.deleteStage(entity) {}
-            },
-            onReorderStages = { reordered ->
-                viewModel.reorderStages(reordered)
-            }
-        )
-    }
-
     // Trash Dialog
     if (showTrashDialog) {
         TrashDialog(
@@ -217,41 +254,6 @@ fun SettingsScreen(
         AuditLogsDialog(
             logs = recentAudits,
             onDismiss = { showAuditLogsDialog = false }
-        )
-    }
-
-    // Backup & Restore Sheet
-    if (showBackupRestoreSheet) {
-        BackupRestoreSettingsSheet(
-            backupList = backupList,
-            onDismiss = { showBackupRestoreSheet = false },
-            onCreateBackup = {
-                viewModel.performBackup { success, msg ->
-                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                }
-            },
-            onRestoreBackup = { b ->
-                viewModel.performRestore(b.filePath) { success, msg ->
-                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                }
-            }
-        )
-    }
-
-    // Database Management Sheet
-    if (showDatabaseManagementSheet) {
-        DatabaseManagementSettingsSheet(
-            onDismiss = { showDatabaseManagementSheet = false },
-            onClearSampleData = {
-                viewModel.clearSampleData {
-                    Toast.makeText(context, "اطلاعات فرضی با موفقیت پاک شد و دیتابیس آماده کار است.", Toast.LENGTH_LONG).show()
-                }
-            },
-            onSeedSampleData = {
-                viewModel.seedSampleData {
-                    Toast.makeText(context, "اطلاعات فرضی تابلوسازی با موفقیت بارگذاری شد.", Toast.LENGTH_SHORT).show()
-                }
-            }
         )
     }
 }
@@ -389,7 +391,7 @@ fun SettingsContent(
                         // Primary Color Palette
                         Column {
                             Text("رنگ اصلی برنامه:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             val colorOptions = listOf(
                                 "AMBER" to ("کهربایی" to PrimaryAmber),
                                 "BLUE" to ("آبی" to PrimaryBlue),
@@ -398,25 +400,36 @@ fun SettingsContent(
                                 "ROSE" to ("زرشکی" to PrimaryRose),
                                 "PURPLE" to ("بنفش" to PrimaryPurple)
                             )
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                items(colorOptions) { (key, pair) ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                colorOptions.forEach { (key, pair) ->
                                     val (label, col) = pair
                                     val isSelected = primaryColorKey == key
-                                    Surface(
-                                        color = if (isSelected) col else col.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+                                    Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(12.dp))
+                                            .size(42.dp)
+                                            .clip(CircleShape)
+                                            .background(col)
+                                            .border(
+                                                width = if (isSelected) 3.dp else 1.dp,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else col.copy(alpha = 0.5f),
+                                                shape = CircleShape
+                                            )
                                             .clickable { onSetPrimaryColor(key) }
+                                            .testTag("color_circle_$key"),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = label,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                        )
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "انتخاب شده: $label",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -907,260 +920,6 @@ fun UserProfileDialog(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExpenseCategoryDialog(
-    category: ExpenseCategoryEntity?,
-    currencyUnit: String,
-    onDismiss: () -> Unit,
-    onSave: (ExpenseCategoryEntity, Boolean) -> Unit,
-    warnUnsavedChanges: Boolean = true
-) {
-    val isNew = category == null
-    var title by remember { mutableStateOf(category?.title ?: "") }
-    var defaultAmount by remember { mutableStateOf(category?.defaultAmount ?: 0L) }
-    var description by remember { mutableStateOf(category?.description ?: "") }
-    var titleError by remember { mutableStateOf<String?>(null) }
-    var showUnsavedDialog by remember { mutableStateOf(false) }
-
-    val isDirty = remember(title, defaultAmount, description) {
-        if (isNew) {
-            title.isNotBlank() || defaultAmount > 0L
-        } else {
-            title != (category?.title ?: "") ||
-                    defaultAmount != (category?.defaultAmount ?: 0L) ||
-                    description != (category?.description ?: "")
-        }
-    }
-
-    val attemptDismiss = {
-        if (warnUnsavedChanges && isDirty) {
-            showUnsavedDialog = true
-        } else {
-            onDismiss()
-        }
-    }
-
-    val executeSave = {
-        if (title.trim().isEmpty()) {
-            titleError = "عنوان هزینه الزامی است."
-        } else {
-            val entity = category?.copy(
-                title = title.trim(),
-                defaultAmount = defaultAmount,
-                description = description.trim()
-            ) ?: ExpenseCategoryEntity(
-                id = UUID.randomUUID().toString(),
-                title = title.trim(),
-                defaultAmount = defaultAmount,
-                description = description.trim()
-            )
-            onSave(entity, isNew)
-        }
-    }
-
-    AppFormBottomSheet(
-        title = if (isNew) "افزودن عنوان هزینه جدید" else "ویرایش عنوان هزینه",
-        subtitle = "تعریف عناوین پرکاربرد هزینه‌های کارگاهی و مبلغ پیش‌فرض",
-        onDismissRequest = onDismiss,
-        isDirty = isDirty,
-        warnUnsavedChanges = warnUnsavedChanges,
-        onAttemptDismiss = attemptDismiss
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            PersianTextField(
-                value = title,
-                onValueChange = {
-                    title = it
-                    titleError = null
-                },
-                label = "عنوان هزینه",
-                placeholder = "مثال: کرایه بالابر، ورق کامپوزیت",
-                isError = titleError != null,
-                errorMessage = titleError
-            )
-            CurrencyInputField(
-                amount = defaultAmount,
-                onAmountChange = { defaultAmount = it },
-                label = "مبلغ پیش‌فرض (اختیاری)",
-                currencyUnit = currencyUnit
-            )
-            PersianTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = "توضیحات"
-            )
-        }
-
-        StickyBottomActionBar(
-            entityName = "عنوان هزینه",
-            saveButtonText = "ذخیره عنوان هزینه",
-            onSave = executeSave,
-            onCancel = onDismiss,
-            isDirty = isDirty,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-
-    if (showUnsavedDialog) {
-        UnsavedChangesDialog(
-            show = true,
-            onSaveAndExit = {
-                showUnsavedDialog = false
-                executeSave()
-            },
-            onDiscardAndExit = {
-                showUnsavedDialog = false
-                onDismiss()
-            },
-            onDismiss = { showUnsavedDialog = false }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun StageEditDialog(
-    stage: com.example.data.local.entities.ProjectStageEntity?,
-    nextOrder: Int,
-    onDismiss: () -> Unit,
-    onSave: (com.example.data.local.entities.ProjectStageEntity, Boolean) -> Unit,
-    warnUnsavedChanges: Boolean = true
-) {
-    val isNew = stage == null
-    var title by remember { mutableStateOf(stage?.title ?: "") }
-    var selectedColor by remember { mutableStateOf(stage?.colorHex ?: "#3B82F6") }
-    var titleError by remember { mutableStateOf<String?>(null) }
-    var showUnsavedDialog by remember { mutableStateOf(false) }
-
-    val presetColors = listOf(
-        "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
-        "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1"
-    )
-
-    val isDirty = remember(title, selectedColor) {
-        if (isNew) {
-            title.isNotBlank()
-        } else {
-            title != (stage?.title ?: "") || selectedColor != (stage?.colorHex ?: "")
-        }
-    }
-
-    val attemptDismiss = {
-        if (warnUnsavedChanges && isDirty) {
-            showUnsavedDialog = true
-        } else {
-            onDismiss()
-        }
-    }
-
-    val executeSave = {
-        if (title.trim().isEmpty()) {
-            titleError = "عنوان مرحله الزامی است."
-        } else {
-            val entity = stage?.copy(
-                name = title.trim(),
-                colorHex = selectedColor
-            ) ?: ProjectStageEntity(
-                id = UUID.randomUUID().toString(),
-                name = title.trim(),
-                colorHex = selectedColor,
-                displayOrder = nextOrder
-            )
-            onSave(entity, isNew)
-        }
-    }
-
-    AppFormBottomSheet(
-        title = if (isNew) "افزودن مرحله جدید" else "ویرایش مرحله کارگاهی",
-        subtitle = "نام مرحله و نشانگر رنگی در پرونده پروژه",
-        onDismissRequest = onDismiss,
-        isDirty = isDirty,
-        warnUnsavedChanges = warnUnsavedChanges,
-        onAttemptDismiss = attemptDismiss
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f, fill = false)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            PersianTextField(
-                value = title,
-                onValueChange = {
-                    title = it
-                    titleError = null
-                },
-                label = "عنوان مرحله کارگاهی",
-                placeholder = "مثال: خم‌کاری و جوشکاری",
-                isError = titleError != null,
-                errorMessage = titleError
-            )
-
-            Text("رنگ نشانگر مرحله:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(presetColors) { hex ->
-                    val isSelected = selectedColor.equals(hex, ignoreCase = true)
-                    val color = try {
-                        Color(android.graphics.Color.parseColor(hex))
-                    } catch (_: Exception) { Color.Gray }
-
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .border(
-                                width = if (isSelected) 3.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                shape = CircleShape
-                            )
-                            .clickable { selectedColor = hex },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isSelected) {
-                            Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
-            }
-        }
-
-        StickyBottomActionBar(
-            entityName = "مرحله کارگاهی",
-            saveButtonText = "ذخیره مرحله کارگاهی",
-            onSave = executeSave,
-            onCancel = onDismiss,
-            isDirty = isDirty,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-
-    if (showUnsavedDialog) {
-        UnsavedChangesDialog(
-            show = true,
-            onSaveAndExit = {
-                showUnsavedDialog = false
-                executeSave()
-            },
-            onDiscardAndExit = {
-                showUnsavedDialog = false
-                onDismiss()
-            },
-            onDismiss = { showUnsavedDialog = false }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 fun TrashDialog(
     trashItems: List<TrashItem>,
     onDismiss: () -> Unit,
@@ -1425,26 +1184,6 @@ fun ContractorEditDialogPreview() {
                 ),
                 onDismiss = {},
                 onSave = {}
-            )
-        }
-    }
-}
-
-@Preview(name = "Stage Edit Preview", showBackground = true)
-@Composable
-fun StageEditDialogPreview() {
-    MyApplicationTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            StageEditDialog(
-                stage = ProjectStageEntity(
-                    id = "s1",
-                    name = "خم‌کاری و جوشکاری شاسی",
-                    colorHex = "#F59E0B",
-                    displayOrder = 2
-                ),
-                nextOrder = 3,
-                onDismiss = {},
-                onSave = { _, _ -> }
             )
         }
     }

@@ -1,11 +1,18 @@
 package com.example.ui.screens.settings
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -21,37 +28,42 @@ import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.ProjectStageEntity
 import com.example.ui.components.common.*
 import com.example.ui.theme.MyApplicationTheme
+import java.util.UUID
 
 /**
- * فرم اختصاصی مدیریت مراحل پروژه بر اساس بند ۱.۱ و ۱.۲ توافقنامه
+ * صفحه تمام‌صفحه اختصاصی مدیریت مراحل پروژه بر اساس بند ۱.۱ و ۱.۲ توافقنامه
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectStagesSettingsSheet(
+fun ProjectStagesSettingsScreen(
     stages: List<ProjectStageEntity>,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onSaveStage: (ProjectStageEntity, Boolean) -> Unit,
     onDeleteStage: (ProjectStageEntity) -> Unit,
     onReorderStages: (List<ProjectStageEntity>) -> Unit,
     warnUnsavedChanges: Boolean = true
 ) {
+    BackHandler { onBack() }
+
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedStageForEdit by remember { mutableStateOf<ProjectStageEntity?>(null) }
     var stageToDelete by remember { mutableStateOf<ProjectStageEntity?>(null) }
 
     val sortedStages = remember(stages) { stages.sortedBy { it.displayOrder } }
 
-    AppFormBottomSheet(
-        title = "مدیریت مراحل پروژه",
-        subtitle = "تنظیم مراحل پیشرفت کارگاه، ترتیب و نشانگرهای رنگی",
-        onDismissRequest = onDismiss,
-        isDirty = false,
-        warnUnsavedChanges = false
-    ) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = "مدیریت مراحل پروژه",
+                subtitle = "تنظیم مراحل پیشرفت کارگاه، ترتیب و نشانگرهای رنگی",
+                onBack = onBack
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -60,7 +72,7 @@ fun ProjectStagesSettingsSheet(
             ) {
                 Text(
                     text = "مراحل فعال (${sortedStages.size} مرحله)",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -69,27 +81,29 @@ fun ProjectStagesSettingsSheet(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.testTag("add_project_stage_btn")
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text("افزودن مرحله جدید", style = MaterialTheme.typography.labelMedium)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             if (sortedStages.isEmpty()) {
                 EmptyStateView(
                     title = "مرحله‌ای تعریف نشده است",
-                    message = "برای تعریف مراحل ساخت تابلوسازی روی دکمه افزودن مرحله جدید کلیک کنید.",
+                    message = "برای تعریف مراحل ساخت تابلوسازی روی دکمه «افزودن مرحله جدید» کلیک کنید.",
                     icon = Icons.Default.Timeline,
-                    modifier = Modifier.padding(vertical = 24.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     itemsIndexed(sortedStages, key = { _, stage -> stage.id }) { index, stage ->
                         val stageColor = try {
@@ -100,7 +114,7 @@ fun ProjectStagesSettingsSheet(
 
                         Surface(
                             shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
                                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -110,7 +124,7 @@ fun ProjectStagesSettingsSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -120,15 +134,15 @@ fun ProjectStagesSettingsSheet(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(16.dp)
+                                            .size(18.dp)
                                             .clip(CircleShape)
                                             .background(stageColor)
                                     )
-                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
                                             text = stage.title,
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
@@ -151,7 +165,7 @@ fun ProjectStagesSettingsSheet(
                                             }
                                         },
                                         enabled = index > 0,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.KeyboardArrowUp,
@@ -172,7 +186,7 @@ fun ProjectStagesSettingsSheet(
                                             }
                                         },
                                         enabled = index < sortedStages.size - 1,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.KeyboardArrowDown,
@@ -184,25 +198,25 @@ fun ProjectStagesSettingsSheet(
 
                                     IconButton(
                                         onClick = { selectedStageForEdit = stage },
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.Edit,
                                             contentDescription = "ویرایش مرحله",
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
 
                                     IconButton(
                                         onClick = { stageToDelete = stage },
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(34.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.DeleteOutline,
                                             contentDescription = "حذف مرحله",
                                             tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(18.dp)
                                         )
                                     }
                                 }
@@ -210,18 +224,6 @@ fun ProjectStagesSettingsSheet(
                         }
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("close_stages_sheet_btn")
-            ) {
-                Text("بستن")
             }
         }
     }
@@ -270,12 +272,185 @@ fun ProjectStagesSettingsSheet(
     )
 }
 
-@Preview(name = "Project Stages Sheet Preview", showBackground = true)
+/**
+ * مودال افزودن و ویرایش مرحله پروژه (مستقر در فایل اختصاصی مراحل پروژه طبق اصل ۱.۱ توافقنامه)
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProjectStagesSettingsSheetPreview() {
+fun StageEditDialog(
+    stage: ProjectStageEntity?,
+    nextOrder: Int,
+    onDismiss: () -> Unit,
+    onSave: (ProjectStageEntity, Boolean) -> Unit,
+    warnUnsavedChanges: Boolean = true
+) {
+    val isNew = stage == null
+    var title by remember { mutableStateOf(stage?.title ?: "") }
+    var selectedColor by remember { mutableStateOf(stage?.colorHex ?: "#3B82F6") }
+    var titleError by remember { mutableStateOf<String?>(null) }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    val presetColors = listOf(
+        "#3B82F6", "#10B981", "#F59E0B", "#EF4444",
+        "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1"
+    )
+
+    val isDirty = remember(title, selectedColor) {
+        if (isNew) {
+            title.isNotBlank()
+        } else {
+            title != (stage?.title ?: "") || selectedColor != (stage?.colorHex ?: "")
+        }
+    }
+
+    val attemptDismiss = {
+        if (warnUnsavedChanges && isDirty) {
+            showUnsavedDialog = true
+        } else {
+            onDismiss()
+        }
+    }
+
+    val executeSave = {
+        if (title.trim().isEmpty()) {
+            titleError = "عنوان مرحله الزامی است."
+        } else {
+            val entity = stage?.copy(
+                name = title.trim(),
+                colorHex = selectedColor,
+                updatedAt = System.currentTimeMillis()
+            ) ?: ProjectStageEntity(
+                id = UUID.randomUUID().toString(),
+                name = title.trim(),
+                displayOrder = nextOrder,
+                colorHex = selectedColor
+            )
+            onSave(entity, isNew)
+        }
+    }
+
+    AppFormBottomSheet(
+        title = if (isNew) "افزودن مرحله جدید" else "ویرایش مرحله کارگاهی",
+        subtitle = "تنظیم عنوان مرحله و رنگ شاخص پیشرفت سفارش",
+        onDismissRequest = onDismiss,
+        isDirty = isDirty,
+        warnUnsavedChanges = warnUnsavedChanges,
+        onAttemptDismiss = attemptDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            PersianTextField(
+                value = title,
+                onValueChange = {
+                    title = it
+                    titleError = null
+                },
+                label = "عنوان مرحله",
+                placeholder = "مثال: خم‌کاری چلنیوم، جوشکاری اسکلت",
+                isError = titleError != null,
+                errorMessage = titleError
+            )
+
+            Column {
+                Text(
+                    text = "رنگ نشانگر مرحله:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(presetColors) { hex ->
+                        val color = Color(android.graphics.Color.parseColor(hex))
+                        val isSelected = selectedColor.equals(hex, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .border(
+                                    width = if (isSelected) 3.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else color.copy(alpha = 0.5f),
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedColor = hex },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "انتخاب شده",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        StickyBottomActionBar(
+            entityName = "مرحله پروژه",
+            saveButtonText = "ذخیره مرحله",
+            onSave = executeSave,
+            onCancel = onDismiss,
+            isDirty = isDirty,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    if (showUnsavedDialog) {
+        UnsavedChangesDialog(
+            show = true,
+            onSaveAndExit = {
+                showUnsavedDialog = false
+                executeSave()
+            },
+            onDiscardAndExit = {
+                showUnsavedDialog = false
+                onDismiss()
+            },
+            onDismiss = { showUnsavedDialog = false }
+        )
+    }
+}
+
+/**
+ * سازگاری نام قبلی جهت جلوگیری از شکست وابستگی‌ها
+ */
+@Composable
+fun ProjectStagesSettingsSheet(
+    stages: List<ProjectStageEntity>,
+    onDismiss: () -> Unit,
+    onSaveStage: (ProjectStageEntity, Boolean) -> Unit,
+    onDeleteStage: (ProjectStageEntity) -> Unit,
+    onReorderStages: (List<ProjectStageEntity>) -> Unit,
+    warnUnsavedChanges: Boolean = true
+) {
+    ProjectStagesSettingsScreen(
+        stages = stages,
+        onBack = onDismiss,
+        onSaveStage = onSaveStage,
+        onDeleteStage = onDeleteStage,
+        onReorderStages = onReorderStages,
+        warnUnsavedChanges = warnUnsavedChanges
+    )
+}
+
+@Preview(name = "Project Stages Screen Preview", showBackground = true)
+@Composable
+fun ProjectStagesSettingsScreenPreview() {
     MyApplicationTheme {
         Surface(color = MaterialTheme.colorScheme.background) {
-            ProjectStagesSettingsSheet(
+            ProjectStagesSettingsScreen(
                 stages = listOf(
                     ProjectStageEntity(
                         id = "1",
@@ -297,12 +472,12 @@ fun ProjectStagesSettingsSheetPreview() {
                     ),
                     ProjectStageEntity(
                         id = "4",
-                        name = "نصب در محل و تحویل",
+                        name = "نصب در محل و تحویل نهایی",
                         displayOrder = 4,
                         colorHex = "#8B5CF6"
                     )
                 ),
-                onDismiss = {},
+                onBack = {},
                 onSaveStage = { _, _ -> },
                 onDeleteStage = {},
                 onReorderStages = {}
