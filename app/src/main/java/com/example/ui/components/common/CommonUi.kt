@@ -126,7 +126,8 @@ fun PersianTextField(
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                focusedPlaceholderColor  = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f)
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -581,7 +582,7 @@ fun UnsavedChangesDialog(
             onDismissRequest = onDismiss,
             icon = {
                 Icon(
-                    Icons.Default.Warning,
+                    imageVector = Icons.Default.Warning,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(32.dp)
@@ -603,28 +604,56 @@ fun UnsavedChangesDialog(
                 )
             },
             confirmButton = {
-                if (onSaveAndExit != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // دکمه ادامه ویرایش: به رنگ سبز و نوشته سفید
                     Button(
-                        onClick = onSaveAndExit,
-                        shape = RoundedCornerShape(10.dp)
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("unsaved_continue_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF16A34A),
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text("ذخیره و خروج")
+                        Text(
+                            text = "ادامه ویرایش",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
-                } else {
+
+                    // دکمه خروج: به رنگ قرمز و نوشته سفید
                     Button(
                         onClick = discardAction,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .testTag("unsaved_discard_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFDC2626),
+                            contentColor = Color.White
+                        )
                     ) {
-                        Text("خروج بدون ذخیره")
+                        Text(
+                            text = "خروج",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = onDismiss) {
-                    Text("ادامه ویرایش")
-                }
-            }
+            dismissButton = null,
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }
@@ -724,6 +753,8 @@ fun UnitSelectorDropdown(
 /**
  * استاندارد ۱.۲ و ۳ سند توافقنامه: ساختار فرم‌های مدال تمام‌عرض با اسکرول، هدر اختصاصی و تم هماهنگ
  * - اصل طراحی ماژولار و DRY: مدیریت یکپارچه وضعیت تغییرات ذخیره‌نشده (Dirty Guard) در تمام فرم‌ها
+ * - حذف دکمه ضربدر (X) از هدر فرم‌ها (خروج صرفاً از طریق انصراف، بک فیزیکی یا درگ)
+ * - رفع فاصله اضافی بالای شیت با بهینه‌سازی Drag Handle
  * - رفع خطای رندر در Preview با تفکیک LocalInspectionMode
  * - جلوگیری فعال از بسته شدن شیت پیش از هشدار با confirmValueChange
  */
@@ -754,15 +785,16 @@ fun AppFormBottomSheet(
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
             ) {
+                // Drag handle با ارتفاع استاندارد و فاصله متناسب
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 10.dp),
+                        .padding(top = 10.dp, bottom = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
                         modifier = Modifier
-                            .width(32.dp)
+                            .width(36.dp)
                             .height(4.dp),
                         shape = RoundedCornerShape(2.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
@@ -773,10 +805,9 @@ fun AppFormBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleLarge,
@@ -790,13 +821,6 @@ fun AppFormBottomSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                    IconButton(onClick = onDismissRequest) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "بستن",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
                 HorizontalDivider(
@@ -844,7 +868,22 @@ fun AppFormBottomSheet(
             ),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             containerColor = MaterialTheme.colorScheme.background,
-            dragHandle = { BottomSheetDefaults.DragHandle() },
+            dragHandle = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .width(36.dp)
+                            .height(4.dp),
+                        shape = RoundedCornerShape(2.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    ) {}
+                }
+            },
             modifier = modifier.fillMaxWidth()
         ) {
             BackHandler(enabled = currentIsDirty && currentWarnUnsaved) {
@@ -860,10 +899,9 @@ fun AppFormBottomSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleLarge,
@@ -877,19 +915,6 @@ fun AppFormBottomSheet(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    }
-                    IconButton(onClick = {
-                        if (currentIsDirty && currentWarnUnsaved) {
-                            currentOnAttemptDismiss()
-                        } else {
-                            currentOnDismissRequest()
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "بستن",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
                 HorizontalDivider(
