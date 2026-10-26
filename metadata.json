@@ -1,0 +1,8 @@
+{
+  "name": "Remix SignPro Manager",
+  "description": "A native Android business management app for sign makers with local database, financial tracking, and professional project organization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
