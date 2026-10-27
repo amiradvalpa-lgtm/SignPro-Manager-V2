@@ -273,7 +273,7 @@ fun DashboardContent(
             ) {
                 // Section 1: دسترسی سریع
                 item {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -630,7 +630,7 @@ private fun DashboardSummaryCard(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.5.sp),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.5.sp),
                     fontWeight = FontWeight.Bold,
                     color = titleTextColor,
                     maxLines = 1
@@ -649,7 +649,7 @@ private fun DashboardSummaryCard(
             if (unit != null) {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 19.sp),
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 16.sp),
                     fontWeight = FontWeight.ExtraBold,
                     color = valueColor,
                     textAlign = TextAlign.Center,
@@ -659,13 +659,13 @@ private fun DashboardSummaryCard(
                 Text(
                     text = unit,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     textAlign = TextAlign.Center
                 )
             } else {
                 Text(
                     text = value,
-                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 16.sp),
                     fontWeight = FontWeight.ExtraBold,
                     color = valueColor,
                     textAlign = TextAlign.Center,
@@ -684,7 +684,7 @@ private fun DashboardSummaryCard(
                 maxLines = 1
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // خط نشانگر افقی گرد در پایین کارت
             Box(
