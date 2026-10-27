@@ -154,111 +154,121 @@ fun DashboardContent(
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Scaffold(
             modifier = modifier,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = "امروز",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = todayJalali,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { /* اعلان‌ها */ }) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "اعلان‌ها و پیام‌ها",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Box {
-                            IconButton(
-                                onClick = { onShowUserMenuChange(true) },
-                                modifier = Modifier.testTag("dashboard_user_icon_btn")
-                            ) {
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    modifier = Modifier.size(36.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = "پروفایل کاربر",
-                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    }
-                                }
+                Column {
+                    TopAppBar(
+                        title = {
+                            Column {
+                                Text(
+                                    text = "امروز",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = todayJalali,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { /* اعلان‌ها */ }) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = "اعلان‌ها و پیام‌ها",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
 
-                            DropdownMenu(
-                                expanded = showUserMenu,
-                                onDismissRequest = { onShowUserMenuChange(false) }
-                            ) {
-                                val userName = currentUser?.fullName?.ifBlank { contractorInfo.name } ?: contractorInfo.name
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Text(
-                                                text = userName,
-                                                fontWeight = FontWeight.Bold,
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                            Text(
-                                                text = "مدیر کارگاه تابلوسازی",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Box {
+                                IconButton(
+                                    onClick = { onShowUserMenuChange(true) },
+                                    modifier = Modifier.testTag("dashboard_user_icon_btn")
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = "پروفایل کاربر",
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                modifier = Modifier.size(22.dp)
                                             )
                                         }
-                                    },
-                                    onClick = {},
-                                    enabled = false
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("ویرایش مشخصات کاربر") },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        onShowUserMenuChange(false)
-                                        onNavigateTo(Screen.Settings.route)
                                     }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("تنظیمات برنامه") },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    },
-                                    onClick = {
-                                        onShowUserMenuChange(false)
-                                        onNavigateTo(Screen.Settings.route)
-                                    }
-                                )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showUserMenu,
+                                    onDismissRequest = { onShowUserMenuChange(false) }
+                                ) {
+                                    val userName = currentUser?.fullName?.ifBlank { contractorInfo.name } ?: contractorInfo.name
+                                    DropdownMenuItem(
+                                        text = {
+                                            Column {
+                                                Text(
+                                                    text = userName,
+                                                    fontWeight = FontWeight.Bold,
+                                                    style = MaterialTheme.typography.bodyMedium
+                                                )
+                                                Text(
+                                                    text = "مدیر کارگاه تابلوسازی",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        },
+                                        onClick = {},
+                                        enabled = false
+                                    )
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text("ویرایش مشخصات کاربر") },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        },
+                                        onClick = {
+                                            onShowUserMenuChange(false)
+                                            onNavigateTo(Screen.Settings.route)
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("تنظیمات برنامه") },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        },
+                                        onClick = {
+                                            onShowUserMenuChange(false)
+                                            onNavigateTo(Screen.Settings.route)
+                                        }
+                                    )
+                                }
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
-                )
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                }
             }
         ) { padding ->
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = padding.calculateTopPadding() + 8.dp,
+                    bottom = 12.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Section 1: دسترسی سریع
@@ -298,11 +308,11 @@ fun DashboardContent(
                             accentColor = Color(0xFF2563EB),
                             iconColor = Color(0xFF2563EB),
                             iconBoxColor = Color(0xFFDBEAFE),
-                            iconBoxDarkColor = Color(0xFF1E3A8A).copy(alpha = 0.5f),
+                            iconBoxDarkColor = Color(0xFF1E3A8A).copy(alpha = 0.45f),
                             cardBgColor = Color(0xFFF0F7FF),
-                            cardBgDarkColor = Color(0xFF172554).copy(alpha = 0.25f),
+                            cardBgDarkColor = MaterialTheme.colorScheme.surface,
                             borderColor = Color(0xFFBFDBFE),
-                            borderDarkColor = Color(0xFF3B82F6).copy(alpha = 0.4f),
+                            borderDarkColor = Color(0xFF3B82F6).copy(alpha = 0.35f),
                             textColor = Color(0xFF1E3A8A),
                             textDarkColor = Color(0xFF93C5FD),
                             onClick = onOpenCustomerDialog
@@ -314,13 +324,13 @@ fun DashboardContent(
                             title = "پروژه جدید",
                             icon = Icons.Default.Apartment,
                             accentColor = Color(0xFFD97706),
-                            iconColor = Color.White,
-                            iconBoxColor = Color(0xFFD97706),
-                            iconBoxDarkColor = Color(0xFFB45309),
+                            iconColor = Color(0xFFD97706),
+                            iconBoxColor = Color(0xFFFEF3C7),
+                            iconBoxDarkColor = Color(0xFF78350F).copy(alpha = 0.45f),
                             cardBgColor = Color(0xFFFFFBEB),
-                            cardBgDarkColor = Color(0xFF451A03).copy(alpha = 0.25f),
+                            cardBgDarkColor = MaterialTheme.colorScheme.surface,
                             borderColor = Color(0xFFFED7AA),
-                            borderDarkColor = Color(0xFFF59E0B).copy(alpha = 0.4f),
+                            borderDarkColor = Color(0xFFF59E0B).copy(alpha = 0.35f),
                             textColor = Color(0xFF92400E),
                             textDarkColor = Color(0xFFFDE68A),
                             onClick = onOpenProjectDialog
@@ -334,11 +344,11 @@ fun DashboardContent(
                             accentColor = Color(0xFF059669),
                             iconColor = Color(0xFF059669),
                             iconBoxColor = Color(0xFFD1FAE5),
-                            iconBoxDarkColor = Color(0xFF064E3B).copy(alpha = 0.5f),
+                            iconBoxDarkColor = Color(0xFF064E3B).copy(alpha = 0.45f),
                             cardBgColor = Color(0xFFF0FDF4),
-                            cardBgDarkColor = Color(0xFF022C22).copy(alpha = 0.25f),
+                            cardBgDarkColor = MaterialTheme.colorScheme.surface,
                             borderColor = Color(0xFFA7F3D0),
-                            borderDarkColor = Color(0xFF10B981).copy(alpha = 0.4f),
+                            borderDarkColor = Color(0xFF10B981).copy(alpha = 0.35f),
                             textColor = Color(0xFF065F46),
                             textDarkColor = Color(0xFFA7F3D0),
                             onClick = onOpenPaymentDialog
@@ -352,11 +362,11 @@ fun DashboardContent(
                             accentColor = Color(0xFF7C3AED),
                             iconColor = Color(0xFF7C3AED),
                             iconBoxColor = Color(0xFFF3E8FF),
-                            iconBoxDarkColor = Color(0xFF4C1D95).copy(alpha = 0.5f),
+                            iconBoxDarkColor = Color(0xFF4C1D95).copy(alpha = 0.45f),
                             cardBgColor = Color(0xFFFAF5FF),
-                            cardBgDarkColor = Color(0xFF2E1065).copy(alpha = 0.25f),
+                            cardBgDarkColor = MaterialTheme.colorScheme.surface,
                             borderColor = Color(0xFFE9D5FF),
-                            borderDarkColor = Color(0xFF8B5CF6).copy(alpha = 0.4f),
+                            borderDarkColor = Color(0xFF8B5CF6).copy(alpha = 0.35f),
                             textColor = Color(0xFF5B21B6),
                             textDarkColor = Color(0xFFDDD6FE),
                             onClick = onOpenCheckDialog
@@ -504,10 +514,6 @@ fun DashboardContent(
                         )
                     }
                 }
-
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
             }
         }
     }
@@ -597,7 +603,8 @@ private fun DashboardSummaryCard(
     onClick: () -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
-    val borderColor = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
+    val borderColor = if (isDark) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f) else Color(0xFFE2E8F0)
+    val cardBg = if (isDark) MaterialTheme.colorScheme.surface else Color.White
     val titleTextColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
 
     Surface(
@@ -605,9 +612,9 @@ private fun DashboardSummaryCard(
             .clip(RoundedCornerShape(20.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
+        color = cardBg,
         border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 1.dp
+        tonalElevation = 0.dp
     ) {
         Column(
             modifier = Modifier

@@ -3,14 +3,13 @@ package com.example.ui.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -80,37 +79,47 @@ fun AppNavigation(viewModel: SignageViewModel) {
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    NavigationBar(modifier = Modifier.testTag("app_bottom_nav_bar")) {
-                        Screen.bottomNavItems.filterNotNull().forEach { screen ->
-                            val selected = currentRoute == screen.route
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    if (currentRoute != screen.route) {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
+                    Column {
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                        )
+                        NavigationBar(
+                            modifier = Modifier.testTag("app_bottom_nav_bar"),
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            windowInsets = WindowInsets.navigationBars
+                        ) {
+                            Screen.bottomNavItems.filterNotNull().forEach { screen ->
+                                val selected = currentRoute == screen.route
+                                NavigationBarItem(
+                                    selected = selected,
+                                    onClick = {
+                                        if (currentRoute != screen.route) {
+                                            navController.navigate(screen.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
                                         }
-                                    }
-                                },
-                                icon = {
-                                    val iconVector = if (selected) screen.icon else (screen.unselectedIcon ?: screen.icon)
-                                    iconVector?.let {
-                                        Icon(imageVector = it, contentDescription = screen.title)
-                                    }
-                                },
-                                label = {
-                                    Text(
-                                        text = screen.title,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                },
-                                modifier = Modifier.testTag("nav_item_${screen.route}")
-                            )
+                                    },
+                                    icon = {
+                                        val iconVector = if (selected) screen.icon else (screen.unselectedIcon ?: screen.icon)
+                                        iconVector?.let {
+                                            Icon(imageVector = it, contentDescription = screen.title)
+                                        }
+                                    },
+                                    label = {
+                                        Text(
+                                            text = screen.title,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
+                                    modifier = Modifier.testTag("nav_item_${screen.route}")
+                                )
+                            }
                         }
                     }
                 }
