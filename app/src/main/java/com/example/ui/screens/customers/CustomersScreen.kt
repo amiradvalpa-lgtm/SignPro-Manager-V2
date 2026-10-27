@@ -394,7 +394,7 @@ private fun SummaryCardsRow(
             modifier = Modifier.weight(1f),
             title = "مجموع مطالبات",
             valueText = FormatUtils.toPersianDigits(FormatUtils.formatNumber(totalDebt)),
-            valueSubText = "${FormatUtils.getCurrencyLabel(currencyUnit)} باز",
+            valueSubText = "${FormatUtils.getCurrencyLabel(currencyUnit)}",
             icon = Icons.Default.TrendingUp,
             iconTint = MoneyNegative,
             valueColor = MoneyNegative,
@@ -744,14 +744,6 @@ private fun CustomerCard(
                         containerColor = MaterialTheme.colorScheme.surface
                     ) {
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "ویرایش مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            },
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Outlined.Edit,
@@ -760,26 +752,34 @@ private fun CustomerCard(
                                     modifier = Modifier.size(18.dp)
                                 )
                             },
+                            text = {
+                                Text(
+                                    "ویرایش مشتری",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
                             onClick = {
                                 menuExpanded = false
                                 onEdit()
                             }
                         )
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "حذف مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            },
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Outlined.Delete,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            text = {
+                                Text(
+                                    "حذف مشتری",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             },
                             onClick = {
