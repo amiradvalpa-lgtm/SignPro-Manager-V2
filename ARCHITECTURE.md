@@ -136,12 +136,29 @@
   3. حذف کامل رنگ‌های هاردکد شده و پیوند کانتینرها، بردرها و متون به پالت استاندارد Material Design 3 (`colorScheme.surface`, `surfaceVariant`, `onSurface`, `onSurfaceVariant`, `outlineVariant`, `primary`) و استفاده از رنگ‌های معنایی `MoneyPositive` و `MoneyNegative` سازگار با هر دو تم.
   4. افزودن پیش‌نمایش دوگانه تم روشن و تم تیره (`CustomersScreenPreviewLight` و `CustomersScreenPreviewDark`) با فعال‌سازی صریح `LocalLayoutDirection provides LayoutDirection.Rtl`.
 
+#### تصمیم ADR-015: تفکیک تمام‌صفحه سطل زباله و سابقه فعالیت‌ها، ارتقای استخراج تاریخچه تماس و بهینه‌سازی کارت مشتریان
+- **وضعیت:** تصویب شده
+- **مسئله:**
+  1. ارائه سطل زباله و سابقه فعالیت‌ها در قالب BottomSheet با اصول ۱.۱ و ۱.۲ سند توافقنامه مغایرت داشت و نیازمند تبدیل به صفحه مستقل تمام‌صفحه بود.
+  2. متد `AuditLogItem` در `DashboardScreen.kt` به صورت بلااستفاده باقی مانده بود.
+  3. هدر تنظیمات دارای زیرعنوان طولانی بود که بر خلاف سادگی بصری بود.
+  4. در کارت مشتریان، فونت نام مشتری بزرگ بود، آیکون‌های منو بعد از متن قرار داشتند و عبارت آخرین تماس در ستون میانی قرار گرفته بود. همچنین تاریخ تماس به دلیل عدم تبدیل ارقام فارسی و فرمت‌های ذخیره‌سازی شماره در دیتابیس گوشی خوانده نمی‌شد و پس از اتمام تماس صفحه رفرش نمی‌شد.
+  5. رندر پیش‌نمایش در Android Studio به دلیل کش قدیمی کامپایل، نبود ابعاد مشخص دستگاه و فراخوانی مستقیم پنجره شناور Popup در Preview دچار خطا می‌شد.
+- **تصمیم:**
+  1. ایجاد صفحات تمام‌صفحه مستقل `TrashSettingsScreen.kt` و `AuditLogsSettingsScreen.kt` در پکیج `com.example.ui.screens.settings` مطابق با استانداردهای AGREEMENT.md به همراه Scaffold، Divider، BackHandler و Preview.
+  2. انتقال و ارتقای متد `AuditLogItem` به `AuditLogsSettingsScreen.kt` و پاکسازی داشبورد.
+  3. ساده‌سازی هدر تنظیمات به متن متمرکز «تنظیمات نرم‌افزار» بدون زیرعنوان.
+  4. بهینه‌سازی کارت مشتری: کاهش فونت نام به ۱۴sp با وزن Bold، استفاده از `leadingIcon` در منوی عملیات، انتقال برچسب آخرین تماس به زیر دکمه‌های عملیات در ستون سمت چپ.
+  5. استانداردسازی `CallLogHelper` با تبدیل ارقام فارسی به انگلیسی (`toEnglishDigits`)، مطابقت چندگانه شماره‌ها با `PhoneNumberUtils.compare` و بازیابی مجدد با `LifecycleEventEffect(ON_RESUME)`.
+  6. اصلاح پیش‌نمایش‌ها با تفکیک `LocalInspectionMode` و تعیین صریح `device` جهت رفع کامل خطای Layoutlib.
+
 ---
 
 ### ۳. ساختار پکیج‌ها و وظایف
 - `com.example.AlpaApplication`: نقطه ورود و لایه ثبت خطای سراسری اپلیکیشن.
 - `com.example.MainActivity`: اکتیویتی اصلی برنامه میزبان کامپوز و سیستم بارها.
 - `com.example.ui.screens.crash.CrashReportActivity`: صفحه اختصاصی نمایش و اشتراک‌گذاری کرش در صورت بروز خطای ناشناخته.
+- `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`).
 - `com.example.data.local`: انتیتی‌ها، دیتابیس Room و نمونه داده‌های اولیه تابلوسازی.
 - `com.example.util`: ابزارهای کمکی (تبدیل تاریخ جلالی، ابزار تاریخچه تماس CallLogHelper، تولید PDF فاکتور، پشتیبان‌گیری، رمزنگاری و ثبت کرش).
 

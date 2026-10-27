@@ -93,7 +93,16 @@ fun CustomersScreen(
 
     // Load last call timestamp for each customer asynchronously
     var lastCallMap by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    LaunchedEffect(hasCallLogPermission, customers) {
+    var callLogRefreshTrigger by remember { mutableIntStateOf(0) }
+
+    androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+        if (CallLogHelper.hasCallLogPermission(context)) {
+            hasCallLogPermission = true
+            callLogRefreshTrigger++
+        }
+    }
+
+    LaunchedEffect(hasCallLogPermission, customers, callLogRefreshTrigger) {
         if (hasCallLogPermission && customers.isNotEmpty()) {
             withContext(Dispatchers.IO) {
                 val map = mutableMapOf<String, String>()
@@ -608,28 +617,29 @@ private fun CustomerCard(
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer,
                 shape = CircleShape,
-                modifier = Modifier.size(46.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 2. Center Info: Name + Status badge + Last call date (Start-aligned for Persian RTL)
+            // 2. Center Info: Name + Financial status (Start-aligned for Persian RTL)
             Column(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
                     text = customer.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
@@ -648,11 +658,12 @@ private fun CustomerCard(
                             imageVector = Icons.Outlined.ErrorOutline,
                             contentDescription = null,
                             tint = MoneyNegative,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "بدهکار: ${FormatUtils.formatCurrency(balance, currencyUnit)}",
                             style = MaterialTheme.typography.bodySmall,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MoneyNegative
                         )
@@ -666,136 +677,149 @@ private fun CustomerCard(
                             imageVector = Icons.Outlined.CheckCircle,
                             contentDescription = null,
                             tint = MoneyPositive,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = "تسویه‌شده کامل",
                             style = MaterialTheme.typography.bodySmall,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MoneyPositive
                         )
                     }
                 }
-
-                // Last Contact Date Line
-                Spacer(modifier = Modifier.height(3.dp))
-                val callInfoText = when {
-                    lastCallDate != null -> "آخرین تماس: $lastCallDate"
-                    !hasCallLogPermission -> "آخرین تماس: بدون دسترسی"
-                    else -> "آخرین تماس: ثبت نشده"
-                }
-                Text(
-                    text = callInfoText,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            // 3. Left in RTL: Action Buttons (Call + More)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // 3. Left in RTL: Action Buttons (Call + Menu) with Last Call Date underneath
+            val isInspection = androidx.compose.ui.platform.LocalInspectionMode.current
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Call Button
-                Surface(
-                    onClick = onCall,
-                    shape = RoundedCornerShape(12.dp),
-                    color = MoneyPositive.copy(alpha = 0.16f),
-                    modifier = Modifier
-                        .size(40.dp)
-                        .testTag("customer_call_btn_${customer.id}")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.Call,
-                            contentDescription = "تماس تلفنی",
-                            tint = MoneyPositive,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                // More / Menu Button
-                Box {
+                    // Call Button
                     Surface(
-                        onClick = { menuExpanded = true },
+                        onClick = onCall,
                         shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        color = MoneyPositive.copy(alpha = 0.16f),
                         modifier = Modifier
-                            .size(40.dp)
-                            .testTag("customer_menu_btn_${customer.id}")
+                            .size(38.dp)
+                            .testTag("customer_call_btn_${customer.id}")
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "عملیات",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Default.Call,
+                                contentDescription = "تماس تلفنی",
+                                tint = MoneyPositive,
+                                modifier = Modifier.size(19.dp)
                             )
                         }
                     }
 
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                        shape = RoundedCornerShape(14.dp),
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ) {
-                        DropdownMenuItem(
-                            trailingIcon = {
+                    // More / Menu Button
+                    Box {
+                        Surface(
+                            onClick = { menuExpanded = true },
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier
+                                .size(38.dp)
+                                .testTag("customer_menu_btn_${customer.id}")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Outlined.Edit,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "عملیات",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(19.dp)
                                 )
-                            },
-                            text = {
-                                Text(
-                                    "ویرایش مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onEdit()
                             }
-                        )
-                        DropdownMenuItem(
-                            trailingIcon = {
-                                Icon(
-                                    imageVector = Icons.Outlined.Delete,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(18.dp)
+                        }
+
+                        if (!isInspection) {
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                                shape = RoundedCornerShape(14.dp),
+                                containerColor = MaterialTheme.colorScheme.surface
+                            ) {
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Edit,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    text = {
+                                        Text(
+                                            "ویرایش مشتری",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onEdit()
+                                    }
                                 )
-                            },
-                            text = {
-                                Text(
-                                    "حذف مشتری",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.error
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Delete,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    },
+                                    text = {
+                                        Text(
+                                            "حذف مشتری",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        menuExpanded = false
+                                        onDelete()
+                                    }
                                 )
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onDelete()
                             }
-                        )
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Last Contact Date Line transferred to under the action icons
+                val callInfoText = when {
+                    lastCallDate != null -> "تماس: $lastCallDate"
+                    !hasCallLogPermission -> "بدون دسترسی"
+                    else -> "ثبت نشده"
+                }
+                Text(
+                    text = callInfoText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
 }
 
 private fun dialCustomerPhone(context: Context, rawPhone: String) {
-    val clean = rawPhone.replace(Regex("[^0-9+]"), "").trim()
+    val english = CallLogHelper.toEnglishDigits(rawPhone)
+    val clean = english.replace(Regex("[^0-9+]"), "").trim()
     if (clean.isNotBlank()) {
         try {
             val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$clean"))
@@ -804,7 +828,11 @@ private fun dialCustomerPhone(context: Context, rawPhone: String) {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(name = "Customers Screen Light Preview", showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Customers Screen Light Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
 @Composable
 fun CustomersScreenPreviewLight() {
     com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
@@ -818,7 +846,11 @@ fun CustomersScreenPreviewLight() {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(name = "Customers Screen Dark Preview", showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Customers Screen Dark Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
 @Composable
 fun CustomersScreenPreviewDark() {
     com.example.ui.theme.MyApplicationTheme(themeMode = "DARK") {
@@ -836,7 +868,7 @@ fun CustomersScreenPreviewDark() {
 private fun CustomersPreviewContent() {
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(16.dp)
     ) {
         SummaryCardsRow(
@@ -882,3 +914,4 @@ private fun CustomersPreviewContent() {
         )
     }
 }
+

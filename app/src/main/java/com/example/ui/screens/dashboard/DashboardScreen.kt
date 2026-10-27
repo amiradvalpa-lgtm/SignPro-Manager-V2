@@ -370,54 +370,7 @@ private fun QuickActionButton(
     }
 }
 
-@Composable
-private fun AuditLogItem(audit: AuditLogEntity) {
-    val (actionIcon, actionColor) = when (audit.action) {
-        "CREATE" -> Icons.Default.AddCircle to MoneyPositive
-        "UPDATE" -> Icons.Default.Edit to PrimaryBlue
-        "DELETE" -> Icons.Default.Delete to MoneyNegative
-        else -> Icons.Default.Info to PrimaryAmber
-    }
 
-    val timeString = remember(audit.timestamp) {
-        val sdf = SimpleDateFormat("HH:mm", Locale.US)
-        sdf.format(Date(audit.timestamp))
-    }
-
-    AppCard {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                color = actionColor.copy(alpha = 0.15f),
-                shape = CircleShape,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(actionIcon, contentDescription = null, tint = actionColor, modifier = Modifier.size(18.dp))
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = audit.details,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "کاربر: ${audit.userId} • ساعت $timeString",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
 
 @androidx.compose.ui.tooling.preview.Preview(name = "Dashboard Card Preview", showBackground = true)
 @Composable

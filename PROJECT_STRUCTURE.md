@@ -91,6 +91,8 @@
 | `/app/src/main/java/com/example/ui/screens/finance/FinanceScreen.kt` | صفحه مدیریت مالی، چک‌ها و هزینه‌ها | تب‌بندی دریافتی‌ها، پرداختی‌ها، دسته چک‌های صیادی و ثبت هزینه‌های تفکیک‌شده کارگاهی و فاکتور. |
 | `/app/src/main/java/com/example/ui/screens/finance/FinancialDialogs.kt` | فرم‌های شیت پرداخت، دریافت، چک و هزینه | ورود تراکنش‌های مالی، مدیریت چک و ثبت هزینه با محاسبات آنی به حروف. |
 | `/app/src/main/java/com/example/ui/screens/settings/SettingsScreen.kt` | صفحه اصلی تنظیمات کارگاه | دسترسی به تم، رنگ اصلی، امنیت، پشتیبان‌گیری، سطل زباله و اطلاعات کارگاه. |
+| `/app/src/main/java/com/example/ui/screens/settings/TrashSettingsScreen.kt` | صفحه تمام‌صفحه مدیریت سطل زباله | بازبینی و بازیابی رکوردهای حذف‌شده (پروژه، مشتری، هزینه، فاکتور) با تب‌بندی یکپارچه و دسته‌ای. |
+| `/app/src/main/java/com/example/ui/screens/settings/AuditLogsSettingsScreen.kt` | صفحه تمام‌صفحه سابقه فعالیت‌ها | مشاهده ردپای رویدادها، تغییرات و سوابق ثبت یا ویرایش با فیلتر اکشن و کامپوننت AuditLogItem. |
 | `/app/src/main/java/com/example/ui/screens/settings/ExpenseCategoriesSettingsSheet.kt` | صفحه مستقل مدیریت عناوین هزینه‌ها | ویرایش و افزودن سرفصل‌های هزینه کارگاه و فاکتور به همراه دیالوگ‌های اختصاصی. |
 | `/app/src/main/java/com/example/ui/screens/settings/ProjectStagesSettingsSheet.kt` | صفحه مستقل مدیریت مراحل پروژه | مدیریت پویای مراحل سفارش با قابلیت تغییر ترتیب، نام و کد رنگی مرحله. |
 | `/app/src/main/java/com/example/ui/screens/settings/BackupRestoreSettingsSheet.kt` | صفحه مستقل پشتیبان‌گیری و بازیابی | ایجاد فایل پشتیبان رمزنگاری‌شده، بازگردانی پایگاه داده و اشتراک فایل پشتیبان. |

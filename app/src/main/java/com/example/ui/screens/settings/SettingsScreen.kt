@@ -41,7 +41,9 @@ enum class SettingsSubScreen {
     EXPENSE_CATEGORIES,
     PROJECT_STAGES,
     BACKUP_RESTORE,
-    DATABASE_MANAGEMENT
+    DATABASE_MANAGEMENT,
+    TRASH,
+    AUDIT_LOGS
 }
 
 @Composable
@@ -69,9 +71,6 @@ fun SettingsScreen(
     // Dialog & Sheet states
     var showContractorDialog by remember { mutableStateOf(false) }
     var showUserDialog by remember { mutableStateOf(false) }
-    var showTrashDialog by remember { mutableStateOf(false) }
-    var itemToRestore by remember { mutableStateOf<TrashItem?>(null) }
-    var showAuditLogsDialog by remember { mutableStateOf(false) }
 
     when (currentSubScreen) {
         SettingsSubScreen.MAIN -> {
@@ -96,8 +95,8 @@ fun SettingsScreen(
                 onSetWarnUnsaved = { viewModel.setWarnUnsavedChanges(it) },
                 onOpenExpenseCategories = { currentSubScreen = SettingsSubScreen.EXPENSE_CATEGORIES },
                 onOpenProjectStages = { currentSubScreen = SettingsSubScreen.PROJECT_STAGES },
-                onOpenTrash = { showTrashDialog = true },
-                onOpenAuditLogs = { showAuditLogsDialog = true },
+                onOpenTrash = { currentSubScreen = SettingsSubScreen.TRASH },
+                onOpenAuditLogs = { currentSubScreen = SettingsSubScreen.AUDIT_LOGS },
                 onTogglePin = { checked ->
                     val user = currentUser
                     viewModel.updateSecuritySettings(
@@ -186,6 +185,23 @@ fun SettingsScreen(
                 }
             )
         }
+        SettingsSubScreen.TRASH -> {
+            TrashSettingsScreen(
+                trashItems = trashItems,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onRestoreItem = { item ->
+                    viewModel.restoreTrashItem(item) {
+                        Toast.makeText(context, "با موفقیت بازیابی شد.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
+        SettingsSubScreen.AUDIT_LOGS -> {
+            AuditLogsSettingsScreen(
+                logs = recentAudits,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+            )
+        }
     }
 
     // Contractor Info Dialog
@@ -220,40 +236,6 @@ fun SettingsScreen(
                 showUserDialog = false
                 Toast.makeText(context, "اطلاعات امنیتی بروزرسانی شد.", Toast.LENGTH_SHORT).show()
             }
-        )
-    }
-
-    // Trash Dialog
-    if (showTrashDialog) {
-        TrashDialog(
-            trashItems = trashItems,
-            onDismiss = { showTrashDialog = false },
-            onRequestRestore = { item -> itemToRestore = item }
-        )
-    }
-
-    // Pre-restore confirmation dialog (Rule: confirm before restore)
-    DeleteConfirmationDialog(
-        show = itemToRestore != null,
-        title = "تأیید بازیابی از سطل زباله",
-        message = "آیا از بازیابی «${itemToRestore?.title}» (${itemToRestore?.categoryLabel}) به فهرست فعال اطمینان دارید؟",
-        confirmButtonText = "بازیابی",
-        onConfirm = {
-            itemToRestore?.let { itm ->
-                viewModel.restoreTrashItem(itm) {
-                    itemToRestore = null
-                    Toast.makeText(context, "با موفقیت بازیابی شد.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        },
-        onDismiss = { itemToRestore = null }
-    )
-
-    // Audit Logs Dialog
-    if (showAuditLogsDialog) {
-        AuditLogsDialog(
-            logs = recentAudits,
-            onDismiss = { showAuditLogsDialog = false }
         )
     }
 }
@@ -292,7 +274,6 @@ fun SettingsContent(
         topBar = {
             AppTopBar(
                 title = "تنظیمات نرم‌افزار",
-                subtitle = "پیکربندی تابلوسازی، امنیت، تم و پشتیبان‌گیری",
                 onBack = onBack
             )
         }
@@ -918,257 +899,8 @@ fun UserProfileDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TrashDialog(
-    trashItems: List<TrashItem>,
-    onDismiss: () -> Unit,
-    onRequestRestore: (TrashItem) -> Unit
-) {
-    var selectedTab by remember { mutableIntStateOf(0) }
 
-    AppFormBottomSheet(
-        title = "سطل زباله",
-        subtitle = "${trashItems.size} مورد حذف‌شده قابل بازیابی",
-        onDismissRequest = onDismiss
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp)
-        ) {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.background
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text("فهرست یکپارچه") }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text("گروه‌بندی دسته‌ها") }
-                )
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            if (trashItems.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "سطل زباله خالی است.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else if (selectedTab == 0) {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                ) {
-                    items(trashItems, key = { it.id }) { item ->
-                        TrashItemRow(item = item, onRestore = { onRequestRestore(item) })
-                    }
-                }
-            } else {
-                val grouped = remember(trashItems) { trashItems.groupBy { it.categoryLabel } }
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                ) {
-                    grouped.forEach { (categoryName, items) ->
-                        item {
-                            Surface(
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "$categoryName (${items.size})",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
-                            }
-                        }
-                        items(items, key = { it.id }) { item ->
-                            TrashItemRow(item = item, onRestore = { onRequestRestore(item) })
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-            ) {
-                Text("بستن")
-            }
-        }
-    }
-}
-
-@Composable
-fun TrashItemRow(
-    item: TrashItem,
-    onRestore: () -> Unit
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(10.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(item.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(item.categoryLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                    Text("•", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(item.details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            FilledTonalButton(
-                onClick = onRestore,
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("بازیابی", style = MaterialTheme.typography.labelSmall)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AuditLogsDialog(
-    logs: List<com.example.data.local.entities.AuditLogEntity>,
-    onDismiss: () -> Unit
-) {
-    AppFormBottomSheet(
-        title = "سابقه فعالیت‌ها و رویدادها",
-        subtitle = "${logs.size} رویداد ثبت‌شده در سیستم",
-        onDismissRequest = onDismiss
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp)
-        ) {
-            if (logs.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("هیچ رویدادی ثبت نشده است.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(logs, key = { it.id }) { log ->
-                        val actionColor = when (log.action) {
-                            "INSERT" -> MoneyPositive
-                            "UPDATE" -> MaterialTheme.colorScheme.primary
-                            "DELETE" -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.outline
-                        }
-                        val actionLabel = when (log.action) {
-                            "INSERT" -> "ثبت جدید"
-                            "UPDATE" -> "ویرایش"
-                            "DELETE" -> "حذف"
-                            "RESTORE" -> "بازیابی"
-                            else -> log.action
-                        }
-
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Surface(
-                                            color = actionColor.copy(alpha = 0.15f),
-                                            shape = RoundedCornerShape(4.dp)
-                                        ) {
-                                            Text(
-                                                text = actionLabel,
-                                                color = actionColor,
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
-                                        Text(log.entityType, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
-                                    }
-                                    if (log.details.isNotBlank()) {
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(log.details, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                                Text(
-                                    text = JalaliDate.fromMillis(log.timestamp).formatShort(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-            ) {
-                Text("بستن")
-            }
-        }
-    }
-}
 
 @Preview(name = "Contractor Dialog Preview", showBackground = true)
 @Composable

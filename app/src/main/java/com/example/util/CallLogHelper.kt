@@ -15,36 +15,88 @@ object CallLogHelper {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    fun toEnglishDigits(input: String): String {
+        val builder = StringBuilder()
+        for (ch in input) {
+            when (ch) {
+                '۰', '٠' -> builder.append('0')
+                '۱', '١' -> builder.append('1')
+                '۲', '٢' -> builder.append('2')
+                '۳', '٣' -> builder.append('3')
+                '۴', '٤' -> builder.append('4')
+                '۵', '٥' -> builder.append('5')
+                '۶', '٦' -> builder.append('6')
+                '۷', '٧' -> builder.append('7')
+                '۸', '٨' -> builder.append('8')
+                '۹', '٩' -> builder.append('9')
+                else -> builder.append(ch)
+            }
+        }
+        return builder.toString()
+    }
+
     /**
      * Queries the most recent call timestamp (in epoch milliseconds) for the provided phone number.
-     * Matches the suffix (last 7 to 10 digits) to handle variations with country codes (+98) or local prefixes (09).
+     * Normalizes Persian/Arabic digits and matches using both PhoneNumberUtils and digit suffix.
      */
     fun getLastCallTimestamp(context: Context, phoneNumber: String): Long? {
         if (!hasCallLogPermission(context)) return null
 
-        val cleanPhone = phoneNumber.replace(Regex("[^0-9+]"), "").trim()
-        if (cleanPhone.length < 7) return null
-        val lookupSuffix = cleanPhone.takeLast(7)
+        val englishPhone = toEnglishDigits(phoneNumber)
+        val cleanDigits = englishPhone.replace(Regex("[^0-9]"), "")
+        if (cleanDigits.length < 7) return null
+        val lookupSuffix = cleanDigits.takeLast(7)
 
         val projection = arrayOf(CallLog.Calls.DATE, CallLog.Calls.NUMBER)
-        val selection = "${CallLog.Calls.NUMBER} LIKE ?"
-        val selectionArgs = arrayOf("%$lookupSuffix")
-        val sortOrder = "${CallLog.Calls.DATE} DESC LIMIT 1"
+        val sortOrder = "${CallLog.Calls.DATE} DESC"
 
         return try {
+            // 1. Try SQL query with suffix match
+            val selection = "${CallLog.Calls.NUMBER} LIKE ?"
+            val selectionArgs = arrayOf("%$lookupSuffix")
+
+            var foundTimestamp: Long? = null
             context.contentResolver.query(
                 CallLog.Calls.CONTENT_URI,
                 projection,
                 selection,
                 selectionArgs,
-                sortOrder
+                "$sortOrder LIMIT 1"
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val dateIndex = cursor.getColumnIndex(CallLog.Calls.DATE)
-                    if (dateIndex >= 0) cursor.getLong(dateIndex) else null
-                } else null
+                    if (dateIndex >= 0) {
+                        foundTimestamp = cursor.getLong(dateIndex)
+                    }
+                }
             }
-        } catch (e: Exception) {
+
+            if (foundTimestamp != null) {
+                return foundTimestamp
+            }
+
+            // 2. If SQL suffix match missed due to formatting/spaces/dashes in CallLog, inspect recent calls
+            context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                projection,
+                null,
+                null,
+                "$sortOrder LIMIT 150"
+            )?.use { cursor ->
+                val numIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER)
+                val dateIdx = cursor.getColumnIndex(CallLog.Calls.DATE)
+                while (cursor.moveToNext()) {
+                    val logNum = if (numIdx >= 0) cursor.getString(numIdx) ?: "" else ""
+                    val cleanLog = toEnglishDigits(logNum).replace(Regex("[^0-9]"), "")
+                    if (cleanLog.endsWith(lookupSuffix) ||
+                        android.telephony.PhoneNumberUtils.compare(context, englishPhone, logNum)
+                    ) {
+                        return if (dateIdx >= 0) cursor.getLong(dateIdx) else null
+                    }
+                }
+            }
+            null
+        } catch (_: Exception) {
             null
         }
     }
@@ -58,3 +110,4 @@ object CallLogHelper {
         return FormatUtils.toPersianDigits(jalali.formatShort())
     }
 }
+
