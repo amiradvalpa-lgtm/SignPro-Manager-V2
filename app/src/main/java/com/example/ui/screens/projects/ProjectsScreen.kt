@@ -44,6 +44,7 @@ fun ProjectsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = "پروژه‌های تابلوسازی",
@@ -108,6 +109,7 @@ fun ProjectsScreen(
                 )
             } else {
                 LazyColumn(
+                    contentPadding = PaddingValues(bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -120,9 +122,6 @@ fun ProjectsScreen(
                             onEdit = { selectedProjectForEdit = project },
                             onDelete = { projectToDelete = project }
                         )
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }

@@ -61,6 +61,7 @@ fun ContractsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = "اسناد و قراردادها",
@@ -109,6 +110,7 @@ fun ContractsScreen(
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(filteredContracts, key = { it.id }) { con ->
@@ -202,7 +204,6 @@ fun ContractsScreen(
                                     }
                                 }
                             }
-                            item { Spacer(modifier = Modifier.height(40.dp)) }
                         }
                     }
                 }
@@ -219,6 +220,7 @@ fun ContractsScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(generatedFiles) { file ->
@@ -265,7 +267,6 @@ fun ContractsScreen(
                                 }
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(40.dp)) }
                     }
                 }
             }

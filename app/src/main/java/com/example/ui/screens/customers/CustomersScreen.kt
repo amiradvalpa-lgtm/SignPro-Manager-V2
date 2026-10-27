@@ -158,6 +158,7 @@ fun CustomersScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = "مشتریان و کارفرمایان",
@@ -297,6 +298,7 @@ fun CustomersScreen(
                 )
             } else {
                 LazyColumn(
+                    contentPadding = PaddingValues(bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -316,9 +318,6 @@ fun CustomersScreen(
                             onEdit = { selectedCustomerForEdit = customer },
                             onDelete = { customerToDelete = customer }
                         )
-                    }
-                    item {
-                        Spacer(modifier = Modifier.height(84.dp))
                     }
                 }
             }

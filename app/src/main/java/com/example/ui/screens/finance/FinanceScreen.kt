@@ -66,6 +66,7 @@ fun FinanceScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
                 title = "امور مالی و حسابداری",
@@ -129,6 +130,7 @@ fun FinanceScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         // Prominent Green Action Button
@@ -216,7 +218,6 @@ fun FinanceScreen(
                                 }
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
                 1 -> { // Payments to Customers (پرداخت به مشتری)
@@ -225,6 +226,7 @@ fun FinanceScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         // Prominent Red Action Button
@@ -312,7 +314,6 @@ fun FinanceScreen(
                                 }
                             }
                         }
-                        item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
                 2 -> { // Checks
@@ -330,6 +331,7 @@ fun FinanceScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(checks, key = { it.id }) { chk ->
@@ -410,7 +412,6 @@ fun FinanceScreen(
                                     }
                                 }
                             }
-                            item { Spacer(modifier = Modifier.height(80.dp)) }
                         }
                     }
                 }
@@ -428,6 +429,7 @@ fun FinanceScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(expenses, key = { it.id }) { exp ->
@@ -466,7 +468,6 @@ fun FinanceScreen(
                                     }
                                 }
                             }
-                            item { Spacer(modifier = Modifier.height(80.dp)) }
                         }
                     }
                 }
@@ -484,7 +485,8 @@ fun FinanceScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         item {
