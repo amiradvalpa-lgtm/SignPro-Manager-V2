@@ -103,4 +103,3 @@ object CallLogHelper {
         return FormatUtils.toPersianDigits(jalali.formatShort())
     }
 }
-
