@@ -51,41 +51,33 @@ object CallLogHelper {
         val sortOrder = "${CallLog.Calls.DATE} DESC"
 
         return try {
-            // 1. Try SQL query with suffix match
-            val selection = "${CallLog.Calls.NUMBER} LIKE ?"
-            val selectionArgs = arrayOf("%$lookupSuffix")
-
-            var foundTimestamp: Long? = null
+            // 1. suffix match
             context.contentResolver.query(
                 CallLog.Calls.CONTENT_URI,
                 projection,
-                selection,
-                selectionArgs,
-                "$sortOrder LIMIT 1"
+                "${CallLog.Calls.NUMBER} LIKE ?",
+                arrayOf("%$lookupSuffix"),
+                sortOrder
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val dateIndex = cursor.getColumnIndex(CallLog.Calls.DATE)
-                    if (dateIndex >= 0) {
-                        foundTimestamp = cursor.getLong(dateIndex)
-                    }
+                    if (dateIndex >= 0) return cursor.getLong(dateIndex)
                 }
             }
 
-            if (foundTimestamp != null) {
-                return foundTimestamp
-            }
-
-            // 2. If SQL suffix match missed due to formatting/spaces/dashes in CallLog, inspect recent calls
+            // 2. fallback: بررسی تماس‌های اخیر
             context.contentResolver.query(
                 CallLog.Calls.CONTENT_URI,
                 projection,
                 null,
                 null,
-                "$sortOrder LIMIT 150"
+                sortOrder
             )?.use { cursor ->
                 val numIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER)
                 val dateIdx = cursor.getColumnIndex(CallLog.Calls.DATE)
-                while (cursor.moveToNext()) {
+                var count = 0
+                while (count < 150 && cursor.moveToNext()) {
+                    count++
                     val logNum = if (numIdx >= 0) cursor.getString(numIdx) ?: "" else ""
                     val cleanLog = toEnglishDigits(logNum).replace(Regex("[^0-9]"), "")
                     if (cleanLog.endsWith(lookupSuffix) ||
@@ -96,7 +88,8 @@ object CallLogHelper {
                 }
             }
             null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.e("CallLogHelper", "query failed", e)
             null
         }
     }
