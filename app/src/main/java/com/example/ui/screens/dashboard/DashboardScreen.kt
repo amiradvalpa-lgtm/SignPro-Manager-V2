@@ -273,7 +273,7 @@ fun DashboardContent(
             ) {
                 // Section 1: دسترسی سریع
                 item {
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -376,7 +376,7 @@ fun DashboardContent(
 
                 // Section 2: خلاصه وضعیت کارگاه و مالی
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -573,7 +573,7 @@ private fun QuickActionItem(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.5.sp),
