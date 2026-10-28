@@ -491,22 +491,26 @@ fun SpecEditDialog(
 @Preview(name = "Spec Form Preview", showBackground = true)
 @Composable
 fun SpecEditDialogPreview() {
-    MyApplicationTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            SpecEditDialog(
-                projectId = "p1",
-                spec = ProjectSpecEntity(
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+    ) {
+        MyApplicationTheme {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                SpecEditDialog(
                     projectId = "p1",
-                    subTitle = "حروف برجسته چلنیوم سردر",
-                    signType = "چلنیوم طلایی",
-                    lengthCm = 420.0,
-                    widthCm = 95.0,
-                    depthCm = 9.0,
-                    description = "پلکسی دوبل با نوردهی آفتابی"
-                ),
-                onDismiss = {},
-                onSave = { _, _ -> }
-            )
+                    spec = ProjectSpecEntity(
+                        projectId = "p1",
+                        subTitle = "حروف برجسته چلنیوم سردر",
+                        signType = "چلنیوم طلایی",
+                        lengthCm = 420.0,
+                        widthCm = 95.0,
+                        depthCm = 9.0,
+                        description = "پلکسی دوبل با نوردهی آفتابی"
+                    ),
+                    onDismiss = {},
+                    onSave = { _, _ -> }
+                )
+            }
         }
     }
 }

@@ -19,9 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.pickers.PersianDatePickerModal
 import com.example.util.FormatUtils
@@ -165,7 +170,7 @@ fun AppSearchBar(
 fun PhoneInputField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String = "شماره تلفن همراه",
+    label: String = "شماره تماس",
     modifier: Modifier = Modifier,
     placeholder: String = "۰۹۱۴ ۱۱۱ ۱۱۱۱",
     isError: Boolean = false,
@@ -173,7 +178,9 @@ fun PhoneInputField(
     testTag: String = "phone_input_field"
 ) {
     val displayValue = remember(value) {
-        FormatUtils.formatPhoneNumber(value)
+        val formatted = FormatUtils.formatPhoneNumber(value)
+        // Clean out directional isolate markers within the active editing field
+        formatted.replace("\u2066", "").replace("\u2069", "").replace("\u202A", "").replace("\u202C", "")
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -195,6 +202,10 @@ fun PhoneInputField(
                     }
                 }
             } else null,
+            textStyle = LocalTextStyle.current.copy(
+                textDirection = TextDirection.Ltr,
+                textAlign = TextAlign.Right
+            ),
             isError = isError,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -301,6 +312,37 @@ fun PersianTextField(
     }
 }
 
+class ThousandsSeparatorVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val raw = text.text
+        if (raw.isEmpty()) {
+            return TransformedText(text, OffsetMapping.Identity)
+        }
+        val reversed = raw.reversed()
+        val formatted = reversed.chunked(3).joinToString(",").reversed()
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                val clamped = offset.coerceIn(0, raw.length)
+                if (clamped == 0) return 0
+                val totalCommas = (raw.length - 1) / 3
+                val digitsRight = raw.length - clamped
+                val commasRight = if (digitsRight == 0) 0 else (digitsRight - 1) / 3
+                val commasBefore = totalCommas - commasRight
+                return (clamped + commasBefore).coerceIn(0, formatted.length)
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                val clamped = offset.coerceIn(0, formatted.length)
+                val commasBefore = formatted.take(clamped).count { it == ',' }
+                return (clamped - commasBefore).coerceIn(0, raw.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(formatted), offsetMapping)
+    }
+}
+
 @Composable
 fun CurrencyInputField(
     amount: Long,
@@ -312,22 +354,28 @@ fun CurrencyInputField(
     errorMessage: String? = null,
     testTag: String = "currency_input_field"
 ) {
-    var rawText by remember(amount) {
-        mutableStateOf(if (amount > 0) FormatUtils.formatNumber(amount) else "")
+    var rawDigits by remember(amount) {
+        mutableStateOf(if (amount > 0) amount.toString() else "")
     }
 
     val unitLabel = if (currencyUnit == "RIAL") "ریال" else "تومان"
 
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = rawText,
+            value = rawDigits,
             onValueChange = { input ->
-                val parsed = FormatUtils.parseAmount(input)
-                rawText = if (parsed > 0) FormatUtils.formatNumber(parsed) else ""
+                val digits = FormatUtils.toEnglishDigits(input).filter { it.isDigit() }.take(15)
+                rawDigits = digits
+                val parsed = digits.toLongOrNull() ?: 0L
                 onAmountChange(parsed)
             },
             label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
             placeholder = { Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+            visualTransformation = remember { ThousandsSeparatorVisualTransformation() },
+            textStyle = LocalTextStyle.current.copy(
+                textDirection = TextDirection.Ltr,
+                textAlign = TextAlign.Right
+            ),
             trailingIcon = {
                 Text(
                     text = unitLabel,

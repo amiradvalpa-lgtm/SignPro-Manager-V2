@@ -158,12 +158,13 @@ object FormatUtils {
      * Formats phone number:
      * If mobile (09...): "0914 111 1111" (4-3-4)
      * If landline (021..., 041...): "021 1111 1111" (3-4-4)
+     * Wrapped in Unicode LTR Isolate (\u2066 ... \u2069) so 0914 is always displayed on the left in RTL.
      */
     fun formatPhoneNumber(raw: String): String {
         val clean = cleanAndNormalizePhone(raw)
         if (clean.length < 2) return clean
 
-        return if (clean.startsWith("09")) {
+        val formatted = if (clean.startsWith("09")) {
             when {
                 clean.length <= 4 -> clean
                 clean.length <= 7 -> "${clean.substring(0, 4)} ${clean.substring(4)}"
@@ -177,6 +178,8 @@ object FormatUtils {
                 else -> "${clean.substring(0, 3)} ${clean.substring(3, 7)} ${clean.substring(7)}"
             }
         }
+        // Use Left-to-Right Isolate (\u2066) and Pop Directional Isolate (\u2069)
+        return "\u2066$formatted\u2069"
     }
 
     /**

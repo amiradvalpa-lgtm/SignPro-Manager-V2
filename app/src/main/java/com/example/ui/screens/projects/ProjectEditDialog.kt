@@ -224,21 +224,25 @@ fun ProjectEditDialog(
 @Preview(name = "Project Form Preview", showBackground = true)
 @Composable
 fun ProjectEditDialogPreview() {
-    MyApplicationTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            ProjectEditDialog(
-                project = ProjectEntity(
-                    title = "تابلو چلنیوم طلا فروشی کیمیا",
-                    customerId = "c1",
-                    startDate = "1403/08/15",
-                    description = "نصب در ارتفاع ۴ متری، زیرسازی کامپوزیت طوسی"
-                ),
-                customers = listOf(
-                    CustomerEntity(id = "c1", name = "آقای رحمانی", phone = "09121112233")
-                ),
-                onDismiss = {},
-                onSave = { _, _ -> }
-            )
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+    ) {
+        MyApplicationTheme {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                ProjectEditDialog(
+                    project = ProjectEntity(
+                        title = "تابلو چلنیوم طلا فروشی کیمیا",
+                        customerId = "c1",
+                        startDate = "1403/08/15",
+                        description = "نصب در ارتفاع ۴ متری، زیرسازی کامپوزیت طوسی"
+                    ),
+                    customers = listOf(
+                        CustomerEntity(id = "c1", name = "آقای رحمانی", phone = "09121112233")
+                    ),
+                    onDismiss = {},
+                    onSave = { _, _ -> }
+                )
+            }
         }
     }
 }

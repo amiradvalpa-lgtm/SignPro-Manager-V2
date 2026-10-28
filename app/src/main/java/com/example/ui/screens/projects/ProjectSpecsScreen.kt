@@ -28,6 +28,11 @@ import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.components.common.EmptyStateView
 import com.example.ui.viewmodels.SignageViewModel
 
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
+import com.example.ui.theme.MyApplicationTheme
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectSpecsScreen(
@@ -43,172 +48,14 @@ fun ProjectSpecsScreen(
     var selectedSpecForEdit by remember { mutableStateOf<ProjectSpecEntity?>(null) }
     var specToDelete by remember { mutableStateOf<ProjectSpecEntity?>(null) }
 
-    Scaffold(
-        topBar = {
-            AppTopBar(
-                title = "مشخصات تابلوها",
-                subtitle = project?.title,
-                onBack = onBack,
-                actions = {
-                    IconButton(
-                        onClick = { showCreateDialog = true },
-                        modifier = Modifier.testTag("add_spec_top_bar_btn")
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "افزودن مشخصات تابلو")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { showCreateDialog = true },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("افزودن مشخصات تابلو") },
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.testTag("fab_add_spec")
-            )
-        }
-    ) { padding ->
-        if (specs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-            ) {
-                EmptyStateView(
-                    title = "مشخصاتی ثبت نشده است",
-                    message = "برای صدور دقیق قرارداد و محاسبات متراژ، ابعاد و نوع تابلو را ثبت کنید.",
-                    icon = Icons.Default.Straighten,
-                    actionButtonText = "افزودن اولین مشخصات تابلو",
-                    onActionClick = { showCreateDialog = true }
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "مجموع زیرمجموعه‌های تابلو: ${specs.size} مورد",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                items(specs, key = { it.id }) { spec ->
-                    AppCard {
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            // Overflow menu on top-left (per design rule)
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(4.dp)
-                            ) {
-                                CardOverflowMenu(
-                                    onEdit = { selectedSpecForEdit = spec },
-                                    onDelete = { specToDelete = spec }
-                                )
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(14.dp)
-                                    .padding(end = 28.dp) // space for menu icon
-                            ) {
-                                Text(
-                                    text = spec.subTitle,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Surface(
-                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = spec.signType,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                // Dimension display in centimeters
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    Text(
-                                        text = "طول: ${spec.lengthCm} سانتی‌متر",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "عرض: ${spec.widthCm} سانتی‌متر",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    if (spec.depthCm > 0) {
-                                        Text(
-                                            text = "عمق: ${spec.depthCm} سانتی‌متر",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-
-                                if (spec.description.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = "توضیحات: ${spec.description}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                // Attachments preview
-                                val uris = spec.attachmentUris.split(",").filter { it.isNotBlank() }
-                                if (uris.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        items(uris) { uriStr ->
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(56.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-                                            ) {
-                                                Image(
-                                                    painter = rememberAsyncImagePainter(uriStr),
-                                                    contentDescription = "طرح ضمیمه",
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier.fillMaxSize()
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(80.dp))
-                }
-            }
-        }
-    }
+    ProjectSpecsContent(
+        projectTitle = project?.title,
+        specs = specs,
+        onBack = onBack,
+        onAddSpec = { showCreateDialog = true },
+        onEditSpec = { spec -> selectedSpecForEdit = spec },
+        onDeleteSpec = { spec -> specToDelete = spec }
+    )
 
     if (showCreateDialog) {
         SpecEditDialog(
@@ -252,4 +99,267 @@ fun ProjectSpecsScreen(
         },
         onDismiss = { specToDelete = null }
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProjectSpecsContent(
+    projectTitle: String?,
+    specs: List<ProjectSpecEntity>,
+    onBack: () -> Unit,
+    onAddSpec: () -> Unit,
+    onEditSpec: (ProjectSpecEntity) -> Unit,
+    onDeleteSpec: (ProjectSpecEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            AppTopBar(
+                title = "مشخصات تابلوها",
+                subtitle = projectTitle,
+                onBack = onBack,
+                actions = {
+                    IconButton(
+                        onClick = onAddSpec,
+                        modifier = Modifier.testTag("add_spec_top_bar_btn")
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "افزودن مشخصات تابلو")
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = onAddSpec,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("افزودن مشخصات تابلو") },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.testTag("fab_add_spec")
+            )
+        }
+    ) { padding ->
+        if (specs.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                EmptyStateView(
+                    title = "مشخصاتی ثبت نشده است",
+                    message = "برای صدور دقیق قرارداد و محاسبات متراژ، ابعاد و نوع تابلو را ثبت کنید.",
+                    icon = Icons.Default.Straighten,
+                    actionButtonText = "افزودن اولین مشخصات تابلو",
+                    onActionClick = onAddSpec
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                item {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "مجموع زیرمجموعه‌های تابلو: ${specs.size} مورد",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                items(specs, key = { it.id }) { spec ->
+                    ProjectSpecItemCard(
+                        spec = spec,
+                        onEdit = { onEditSpec(spec) },
+                        onDelete = { onDeleteSpec(spec) }
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProjectSpecItemCard(
+    spec: ProjectSpecEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    AppCard(modifier = modifier) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+            ) {
+                CardOverflowMenu(
+                    onEdit = onEdit,
+                    onDelete = onDelete
+                )
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp)
+                    .padding(end = 28.dp)
+            ) {
+                Text(
+                    text = spec.subTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = spec.signType,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Dimension display in centimeters
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "طول: ${spec.lengthCm} سانتی‌متر",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "عرض: ${spec.widthCm} سانتی‌متر",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (spec.depthCm > 0) {
+                        Text(
+                            text = "عمق: ${spec.depthCm} سانتی‌متر",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (spec.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "توضیحات: ${spec.description}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Attachments preview
+                val uris = spec.attachmentUris.split(",").filter { it.isNotBlank() }
+                if (uris.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(uris) { uriStr ->
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(uriStr),
+                                    contentDescription = "طرح ضمیمه",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// PREVIEWS
+// -------------------------------------------------------------
+
+@Preview(
+    name = "Project Specs Screen - Phone",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun ProjectSpecsScreenPreview() {
+    MyApplicationTheme {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            ProjectSpecsContent(
+                projectTitle = "تابلو چلنیوم و کامپوزیت - نمایندگی سامسونگ",
+                specs = listOf(
+                    ProjectSpecEntity(
+                        id = "1",
+                        projectId = "p1",
+                        subTitle = "تابلو ورودی اصلی",
+                        signType = "چلنیوم کریستالی با نور SMD",
+                        lengthCm = 450.0,
+                        widthCm = 120.0,
+                        depthCm = 12.0,
+                        description = "لبه طلایی اسپانیایی با پلکسی تایوانی ۷ رنگ"
+                    ),
+                    ProjectSpecEntity(
+                        id = "2",
+                        projectId = "p1",
+                        subTitle = "زیرسازی نما",
+                        signType = "کامپوزیت پنل ضد حریق",
+                        lengthCm = 800.0,
+                        widthCm = 240.0,
+                        depthCm = 0.0,
+                        description = "رنگ نقره‌ای مات با آهن‌کشی شبکه ۴۰*۴۰"
+                    )
+                ),
+                onBack = {},
+                onAddSpec = {},
+                onEditSpec = {},
+                onDeleteSpec = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "Project Spec Item Card Preview", showBackground = true)
+@Composable
+fun ProjectSpecItemCardPreview() {
+    MyApplicationTheme {
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            ProjectSpecItemCard(
+                spec = ProjectSpecEntity(
+                    id = "1",
+                    projectId = "p1",
+                    subTitle = "تابلو ورودی اصلی",
+                    signType = "چلنیوم کریستالی با نور SMD",
+                    lengthCm = 450.0,
+                    widthCm = 120.0,
+                    depthCm = 12.0,
+                    description = "لبه طلایی اسپانیایی با پلکسی تایوانی ۷ رنگ"
+                ),
+                onEdit = {},
+                onDelete = {},
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
 }

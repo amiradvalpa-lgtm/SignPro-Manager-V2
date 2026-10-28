@@ -148,12 +148,13 @@ fun CustomerEditDialog(
 
             PersianTextField(
                 value = nationalCode,
-                onValueChange = {
-                    nationalCode = it
+                onValueChange = { input ->
+                    val digits = FormatUtils.toEnglishDigits(input).filter { it.isDigit() }.take(10)
+                    nationalCode = digits
                     nationalCodeError = null
                 },
-                label = "کد ملی",
-                placeholder = "۱۰ رقم کد ملی",
+                label = "کد ملی (اختیاری)",
+                placeholder = "۱۰ رقم کد ملی (اختیاری)",
                 leadingIcon = Icons.Default.Badge,
                 keyboardType = KeyboardType.Number,
                 isError = nationalCodeError != null,
@@ -210,19 +211,23 @@ fun CustomerEditDialog(
 @androidx.compose.ui.tooling.preview.Preview(name = "Customer Form Preview", showBackground = true)
 @Composable
 fun CustomerEditDialogPreview() {
-    com.example.ui.theme.MyApplicationTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            CustomerEditDialog(
-                customer = CustomerEntity(
-                    name = "حاج محمد رضایی",
-                    phone = "09121234567",
-                    nationalCode = "1234567890",
-                    address = "تهران، میدان تجریش",
-                    description = "مشتری همکار و وفادار"
-                ),
-                onDismiss = {},
-                onSave = { _, _ -> }
-            )
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+    ) {
+        com.example.ui.theme.MyApplicationTheme {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                CustomerEditDialog(
+                    customer = CustomerEntity(
+                        name = "حاج محمد رضایی",
+                        phone = "09121234567",
+                        nationalCode = "1234567890",
+                        address = "تهران، میدان تجریش",
+                        description = "مشتری همکار و وفادار"
+                    ),
+                    onDismiss = {},
+                    onSave = { _, _ -> }
+                )
+            }
         }
     }
 }
