@@ -13,7 +13,7 @@ sealed class Screen(
 ) {
     object Dashboard : Screen("dashboard", "داشبورد", Icons.Filled.Dashboard, Icons.Outlined.Dashboard)
     object Customers : Screen("customers", "مشتریان", Icons.Filled.People, Icons.Outlined.People)
-    object Projects : Screen("projects", "پروژه‌ها", Icons.Filled.Work, Icons.Outlined.Work)
+    object Projects : Screen("projects", "پروژه‌ها", Icons.Filled.Work, Icons.Outlined.WorkOutline)
     object Finance : Screen("finance", "امور مالی", Icons.Filled.AccountBalanceWallet, Icons.Outlined.AccountBalanceWallet)
     object Contracts : Screen("contracts", "قراردادها", Icons.Filled.Description, Icons.Outlined.Description)
     object Settings : Screen("settings", "تنظیمات", Icons.Filled.Settings, Icons.Outlined.Settings)
