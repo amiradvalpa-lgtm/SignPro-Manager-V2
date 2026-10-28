@@ -18,8 +18,10 @@ import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.CustomerEntity
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.PersianTextField
+import com.example.ui.components.common.PhoneInputField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnsavedChangesDialog
+import com.example.util.FormatUtils
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,6 +42,7 @@ fun CustomerEditDialog(
 
     var nameError by remember { mutableStateOf<String?>(null) }
     var phoneError by remember { mutableStateOf<String?>(null) }
+    var nationalCodeError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
 
     val isDirty = remember(name, phone, nationalCode, address, description) {
@@ -71,6 +74,16 @@ fun CustomerEditDialog(
         if (phone.trim().isEmpty()) {
             phoneError = "شماره تلفن همراه الزامی است."
             hasError = true
+        } else if (!FormatUtils.isValidPhoneNumber(phone)) {
+            phoneError = "شماره تماس باید ۱۰ رقمی معتبر باشد."
+            hasError = true
+        }
+
+        if (nationalCode.trim().isNotEmpty()) {
+            if (!FormatUtils.isValidIranianNationalCode(nationalCode)) {
+                nationalCodeError = "کد ملی ۱۰ رقمی وارد شده نامعتبر است."
+                hasError = true
+            }
         }
 
         if (!hasError) {
@@ -94,7 +107,7 @@ fun CustomerEditDialog(
 
     AppFormBottomSheet(
         title = if (isNew) "ثبت مشتری جدید" else "ویرایش اطلاعات مشتری",
-        subtitle = "مشخصات هویتی و اطلاعات تماس طرف حساب",
+        subtitle = null,
         onDismissRequest = onDismiss,
         isDirty = isDirty,
         warnUnsavedChanges = warnUnsavedChanges,
@@ -122,16 +135,12 @@ fun CustomerEditDialog(
                 testTag = "customer_name_input"
             )
 
-            PersianTextField(
+            PhoneInputField(
                 value = phone,
                 onValueChange = {
                     phone = it
                     phoneError = null
                 },
-                label = "شماره تلفن همراه",
-                placeholder = "۰۹۱۲۳۴۵۶۷۸۹",
-                leadingIcon = Icons.Default.Phone,
-                keyboardType = KeyboardType.Phone,
                 isError = phoneError != null,
                 errorMessage = phoneError,
                 testTag = "customer_phone_input"
@@ -139,11 +148,16 @@ fun CustomerEditDialog(
 
             PersianTextField(
                 value = nationalCode,
-                onValueChange = { nationalCode = it },
-                label = "کد ملی یا شناسه اقتصادی",
-                placeholder = "۱۰ رقم برای صدور قرارداد رسمی",
+                onValueChange = {
+                    nationalCode = it
+                    nationalCodeError = null
+                },
+                label = "کد ملی",
+                placeholder = "۱۰ رقم کد ملی",
                 leadingIcon = Icons.Default.Badge,
                 keyboardType = KeyboardType.Number,
+                isError = nationalCodeError != null,
+                errorMessage = nationalCodeError,
                 testTag = "customer_national_code_input"
             )
 

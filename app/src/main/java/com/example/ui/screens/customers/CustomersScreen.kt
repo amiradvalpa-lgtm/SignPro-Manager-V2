@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entities.CustomerEntity
+import com.example.ui.components.common.AppSearchBar
 import com.example.ui.components.common.AppTopBar
 import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.components.common.EmptyStateView
@@ -202,63 +203,12 @@ fun CustomersScreen(
             ) {
                 Column {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = {
-                                    Text(
-                                        "جستجوی نام کارفرما یا شماره تماس...",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                },
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                                ),
-                                singleLine = true,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .testTag("customers_search_input")
-                            )
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(
-                                    onClick = { searchQuery = "" },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "پاک کردن",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    AppSearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        placeholder = "جستجوی نام کارفرما یا شماره تماس...",
+                        testTag = "customers_search_input"
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -865,52 +815,83 @@ fun CustomersScreenPreviewDark() {
 
 @Composable
 private fun CustomersPreviewContent() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
-        SummaryCardsRow(
-            totalCustomers = 24,
-            totalDebt = 18500000L,
-            currencyUnit = "TOMAN",
-            settledProjectsCount = 16,
-            settledCustomersCount = 16
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        FilterChipsRow(
-            selectedFilter = CustomerFilterType.ALL,
-            onFilterSelected = {},
-            totalCount = 24,
-            debtorsCount = 8,
-            settledCount = 16
-        )
-        Spacer(modifier = Modifier.height(14.dp))
-        CustomerCard(
-            customer = CustomerEntity(id = "1", name = "مهندس علیرضا رضایی", phone = "09121112233"),
-            balance = 4250000L,
-            currencyUnit = "TOMAN",
-            lastCallDate = null,
-            hasCallLogPermission = true,
-            onRequestCallLogPermission = {},
-            onClick = {},
-            onCall = {},
-            onEdit = {},
-            onDelete = {}
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        CustomerCard(
-            customer = CustomerEntity(id = "2", name = "خانم سارا محمدی", phone = "09123334455"),
-            balance = 0L,
-            currencyUnit = "TOMAN",
-            lastCallDate = "۱۴۰۴/۰۵/۲۴",
-            hasCallLogPermission = true,
-            onRequestCallLogPermission = {},
-            onClick = {},
-            onCall = {},
-            onEdit = {},
-            onDelete = {}
-        )
+    Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            AppTopBar(
+                title = "مشتریان و کارفرمایان",
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "جستجو",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {},
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(18.dp)
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = "مشتری جدید")
+            }
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp)
+        ) {
+            Spacer(modifier = Modifier.height(6.dp))
+            SummaryCardsRow(
+                totalCustomers = 24,
+                totalDebt = 18500000L,
+                currencyUnit = "TOMAN",
+                settledProjectsCount = 16,
+                settledCustomersCount = 16
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            FilterChipsRow(
+                selectedFilter = CustomerFilterType.ALL,
+                onFilterSelected = {},
+                totalCount = 24,
+                debtorsCount = 8,
+                settledCount = 16
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            CustomerCard(
+                customer = CustomerEntity(id = "1", name = "مهندس علیرضا رضایی", phone = "09121112233"),
+                balance = 4250000L,
+                currencyUnit = "TOMAN",
+                lastCallDate = null,
+                hasCallLogPermission = true,
+                onRequestCallLogPermission = {},
+                onClick = {},
+                onCall = {},
+                onEdit = {},
+                onDelete = {}
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            CustomerCard(
+                customer = CustomerEntity(id = "2", name = "خانم سارا محمدی", phone = "09123334455"),
+                balance = 0L,
+                currencyUnit = "TOMAN",
+                lastCallDate = "۱۴۰۴/۰۵/۲۴",
+                hasCallLogPermission = true,
+                onRequestCallLogPermission = {},
+                onClick = {},
+                onCall = {},
+                onEdit = {},
+                onDelete = {}
+            )
+        }
     }
 }
+
 

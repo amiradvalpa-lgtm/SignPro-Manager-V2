@@ -1,6 +1,11 @@
 package com.example.ui.screens.contracts
 
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +39,7 @@ fun ContractsScreen(
     val currencyUnit by viewModel.currencyUnit.collectAsState()
     val contractorInfo by viewModel.contractorInfo.collectAsState()
 
+    var isSearchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var contractToDelete by remember { mutableStateOf<ContractEntity?>(null) }
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -65,7 +71,18 @@ fun ContractsScreen(
         topBar = {
             AppTopBar(
                 title = "اسناد و قراردادها",
-                subtitle = "${contracts.size} قرارداد ثبت شده"
+                actions = {
+                    IconButton(
+                        onClick = { isSearchOpen = !isSearchOpen },
+                        modifier = Modifier.testTag("contracts_search_toggle_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchOpen) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = "جستجو",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
@@ -74,6 +91,23 @@ fun ContractsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            AnimatedVisibility(
+                visible = isSearchOpen,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    AppSearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        placeholder = "جستجوی قرارداد بر اساس عنوان پروژه یا کارفرما...",
+                        testTag = "contracts_search_input"
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(
                     selected = selectedTab == 0,
@@ -91,19 +125,9 @@ fun ContractsScreen(
 
             if (selectedTab == 0) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    PersianTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        label = "جستجوی قرارداد بر اساس پروژه یا کارفرما...",
-                        leadingIcon = Icons.Default.Search,
-                        testTag = "contracts_search_input"
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     if (filteredContracts.isEmpty()) {
                         EmptyStateView(
-                            title = "قراردادی یافت نشد",
+                            title = if (searchQuery.isNotEmpty()) "قراردادی یافت نشد" else "قراردادی ثبت نشده است",
                             message = "از صفحه پروژه‌ها، با زدن دکمه «چاپ قرارداد» یا «تنظیم بندها» قرارداد صادر کنید.",
                             icon = Icons.Default.Description
                         )
@@ -287,3 +311,91 @@ fun ContractsScreen(
         onDismiss = { contractToDelete = null }
     )
 }
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Contracts Screen Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun ContractsScreenPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        AppTopBar(
+                            title = "اسناد و قراردادها",
+                            actions = {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "جستجو",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        )
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        TabRow(selectedTabIndex = 0) {
+                            Tab(
+                                selected = true,
+                                onClick = {},
+                                text = { Text("قراردادهای جاری (۲)", fontWeight = FontWeight.Bold) }
+                            )
+                            Tab(
+                                selected = false,
+                                onClick = {},
+                                text = { Text("فایل‌های PDF صادر شده (۱)", fontWeight = FontWeight.Bold) }
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            AppCard {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "تابلو چلنیوم داروخانه دکتر کریمی",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "طرف حساب: دکتر کریمی • تاریخ: ۱۴۰۳/۰۸/۱۰",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Text(
+                                            text = FormatUtils.formatCurrency(45000000L, "TOMAN"),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

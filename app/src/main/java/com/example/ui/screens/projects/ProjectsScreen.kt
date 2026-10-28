@@ -1,5 +1,10 @@
 package com.example.ui.screens.projects
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,6 +32,7 @@ fun ProjectsScreen(
     val customers by viewModel.customers.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
 
+    var isSearchOpen by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedStatusFilter by remember { mutableStateOf("همه") }
     var selectedProjectForEdit by remember { mutableStateOf<ProjectEntity?>(null) }
@@ -48,7 +54,18 @@ fun ProjectsScreen(
         topBar = {
             AppTopBar(
                 title = "پروژه‌های تابلوسازی",
-                subtitle = "${projects.size} پروژه ثبت شده"
+                actions = {
+                    IconButton(
+                        onClick = { isSearchOpen = !isSearchOpen },
+                        modifier = Modifier.testTag("projects_search_toggle_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchOpen) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = "جستجو",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -69,17 +86,24 @@ fun ProjectsScreen(
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         ) {
+            AnimatedVisibility(
+                visible = isSearchOpen,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    AppSearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        placeholder = "جستجوی عنوان پروژه...",
+                        testTag = "projects_search_input"
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
-
-            PersianTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = "جستجوی پروژه...",
-                leadingIcon = Icons.Default.Search,
-                testTag = "projects_search_input"
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
 
             // Filter chips
             LazyRow(
@@ -233,25 +257,99 @@ fun ProjectListItem(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(name = "Project Card Preview", showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Projects Screen Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
 @Composable
-fun ProjectCardPreview() {
-    com.example.ui.theme.MyApplicationTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            ProjectListItem(
-                project = ProjectEntity(
-                    id = "1",
-                    title = "تابلو چلنیوم داروخانه دکتر کریمی",
-                    customerId = "c1",
-                    startDate = "1403/08/10",
-                    status = "در حال ساخت",
-                    description = "طول ۵ متر با نور SMD آفتابی"
-                ),
-                customerName = "دکتر کریمی",
-                onClick = {},
-                onEdit = {},
-                onDelete = {}
-            )
+fun ProjectsScreenPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        AppTopBar(
+                            title = "پروژه‌های تابلوسازی",
+                            actions = {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "جستجو",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        )
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = {},
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "پروژه جدید")
+                        }
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(listOf("همه", "در حال مذاکره", "طراحی", "در حال ساخت", "نصب", "تکمیل شده")) { filter ->
+                                val isSelected = filter == "همه"
+                                FilterChip(
+                                    selected = isSelected,
+                                    onClick = {},
+                                    label = { Text(filter, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ProjectListItem(
+                            project = ProjectEntity(
+                                id = "1",
+                                title = "تابلو چلنیوم داروخانه دکتر کریمی",
+                                customerId = "c1",
+                                startDate = "1403/08/10",
+                                status = "در حال ساخت",
+                                description = "طول ۵ متر با نور SMD آفتابی"
+                            ),
+                            customerName = "دکتر کریمی",
+                            onClick = {},
+                            onEdit = {},
+                            onDelete = {}
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        ProjectListItem(
+                            project = ProjectEntity(
+                                id = "2",
+                                title = "تابلو کامپوزیت و حروف برجسته کافه لاته",
+                                customerId = "c2",
+                                startDate = "1403/08/15",
+                                status = "طراحی",
+                                description = "طراحی مدرن با نور مخفی نئون"
+                            ),
+                            customerName = "آقای فرهمند",
+                            onClick = {},
+                            onEdit = {},
+                            onDelete = {}
+                        )
+                    }
+                }
+            }
         }
     }
 }

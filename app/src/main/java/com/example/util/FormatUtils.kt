@@ -121,4 +121,94 @@ object FormatUtils {
 
         return result.joinToString(" و ")
     }
+
+    fun toEnglishDigits(input: String): String {
+        return input
+            .replace('۰', '0').replace('۱', '1').replace('۲', '2').replace('۳', '3').replace('۴', '4')
+            .replace('۵', '5').replace('۶', '6').replace('۷', '7').replace('۸', '8').replace('۹', '9')
+            .replace('٠', '0').replace('١', '1').replace('٢', '2').replace('٣', '3').replace('٤', '4')
+            .replace('٥', '5').replace('٦', '6').replace('٧', '7').replace('٨', '8').replace('٩', '9')
+    }
+
+    /**
+     * Cleans pasted or typed phone numbers:
+     * - Strips spaces and non-digits
+     * - Removes +98, 0098, or leading 98
+     * - Guarantees leading 0
+     * - Caps at 11 digits (0 + 10 digits)
+     */
+    fun cleanAndNormalizePhone(raw: String): String {
+        val english = toEnglishDigits(raw)
+        var cleaned = english.replace(Regex("[^0-9+]"), "").trim()
+        if (cleaned.startsWith("+98")) {
+            cleaned = cleaned.removePrefix("+98")
+        } else if (cleaned.startsWith("0098")) {
+            cleaned = cleaned.removePrefix("0098")
+        } else if (cleaned.startsWith("98") && cleaned.length >= 12) {
+            cleaned = cleaned.removePrefix("98")
+        }
+        cleaned = cleaned.replace("+", "")
+        if (cleaned.isNotEmpty() && !cleaned.startsWith("0")) {
+            cleaned = "0$cleaned"
+        }
+        return cleaned.take(11)
+    }
+
+    /**
+     * Formats phone number:
+     * If mobile (09...): "0914 111 1111" (4-3-4)
+     * If landline (021..., 041...): "021 1111 1111" (3-4-4)
+     */
+    fun formatPhoneNumber(raw: String): String {
+        val clean = cleanAndNormalizePhone(raw)
+        if (clean.length < 2) return clean
+
+        return if (clean.startsWith("09")) {
+            when {
+                clean.length <= 4 -> clean
+                clean.length <= 7 -> "${clean.substring(0, 4)} ${clean.substring(4)}"
+                else -> "${clean.substring(0, 4)} ${clean.substring(4, 7)} ${clean.substring(7)}"
+            }
+        } else {
+            // Landline (e.g. 021, 041, 031...)
+            when {
+                clean.length <= 3 -> clean
+                clean.length <= 7 -> "${clean.substring(0, 3)} ${clean.substring(3)}"
+                else -> "${clean.substring(0, 3)} ${clean.substring(3, 7)} ${clean.substring(7)}"
+            }
+        }
+    }
+
+    /**
+     * Validates if the phone number has exactly 11 digits (leading 0 + 10 digits).
+     */
+    fun isValidPhoneNumber(raw: String): Boolean {
+        val clean = cleanAndNormalizePhone(raw)
+        return clean.length == 11 && clean.startsWith("0")
+    }
+
+    /**
+     * Validates 10-digit Iranian National Code using official checksum algorithm (Modulo 11).
+     */
+    fun isValidIranianNationalCode(raw: String): Boolean {
+        val clean = toEnglishDigits(raw).replace(Regex("[^0-9]"), "").trim()
+        if (clean.length != 10) return false
+
+        // Check for disallowed repeated sequences like 0000000000, 1111111111, etc.
+        val allSame = (0..9).any { clean == it.toString().repeat(10) }
+        if (allSame) return false
+
+        val checkDigit = clean[9].digitToInt()
+        var sum = 0
+        for (i in 0 until 9) {
+            sum += clean[i].digitToInt() * (10 - i)
+        }
+        val remainder = sum % 11
+        return if (remainder < 2) {
+            checkDigit == remainder
+        } else {
+            checkDigit == (11 - remainder)
+        }
+    }
 }
+

@@ -68,7 +68,7 @@
 #### ۴.۴. کامپوننت‌های مشترک رابط کاربری (`/app/src/main/java/com/example/ui/components/`)
 | مسیر کامل نسبی | وظیفه و کاربرد | مسئولیت اصلی و ارتباط با سایر بخش‌ها |
 | :--- | :--- | :--- |
-| `/app/src/main/java/com/example/ui/components/common/CommonUi.kt` | کامپوننت‌های پایه و مشترک برنامه | شامل `AppTopBar`, `AppCard`, `PersianTextField`, `CurrencyInputField`, `PersianDateField`, `StickyBottomActionBar`, `UnsavedChangesDialog`, `AppFormBottomSheet` و منوهای کارت. |
+| `/app/src/main/java/com/example/ui/components/common/CommonUi.kt` | کامپوننت‌های پایه و مشترک برنامه | شامل `AppTopBar`, `AppHeaderDivider`, `AppSearchBar`, `PhoneInputField`, `AppCard`, `PersianTextField`, `CurrencyInputField`, `PersianDateField`, `StickyBottomActionBar`, `UnsavedChangesDialog`, `AppFormBottomSheet` و منوهای کارت. |
 | `/app/src/main/java/com/example/ui/components/common/SyncModalSystemBars.kt` | کامپوننت همگام‌ساز نوارهای سیستم | ابزار جانبی جهت همگام‌سازی بصری نوارهای سیستمی در شرایط خاص. |
 | `/app/src/main/java/com/example/ui/components/pickers/PersianDatePickerModal.kt` | مودال تقویم شمسی جلالی | دیالوگ انتخاب تاریخ هجری شمسی ۱۰۰٪ بومی با نمایش روزهای ماه، تبدیل سال و ماه و روز. |
 

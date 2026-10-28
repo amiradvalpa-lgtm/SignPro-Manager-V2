@@ -1,5 +1,10 @@
 package com.example.ui.screens.finance
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,6 +46,8 @@ fun FinanceScreen(
     val currencyUnit by viewModel.currencyUnit.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
 
+    var isSearchOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی")
 
@@ -70,7 +77,18 @@ fun FinanceScreen(
         topBar = {
             AppTopBar(
                 title = "امور مالی و حسابداری",
-                subtitle = "مدیریت دریافت، پرداخت، چک‌ها و هزینه‌ها"
+                actions = {
+                    IconButton(
+                        onClick = { isSearchOpen = !isSearchOpen },
+                        modifier = Modifier.testTag("finance_search_toggle_btn")
+                    ) {
+                        Icon(
+                            imageVector = if (isSearchOpen) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = "جستجو",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -107,6 +125,23 @@ fun FinanceScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            AnimatedVisibility(
+                visible = isSearchOpen,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    AppSearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        placeholder = "جستجو در اسناد مالی، طرف حساب یا شماره چک...",
+                        testTag = "finance_search_input"
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+
             ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 edgePadding = 16.dp,
@@ -125,7 +160,20 @@ fun FinanceScreen(
 
             when (selectedTabIndex) {
                 0 -> { // Receipts from Customers (دریافت از مشتری)
-                    val receipts = remember(payments) { payments.filter { it.type == "RECEIPT" } }
+                    val receipts = remember(payments, searchQuery, customers) {
+                        var list = payments.filter { it.type == "RECEIPT" }
+                        if (searchQuery.isNotBlank()) {
+                            val q = searchQuery.trim()
+                            list = list.filter { p ->
+                                val cust = customers.firstOrNull { it.id == p.customerId }
+                                (cust?.name?.contains(q, ignoreCase = true) == true) ||
+                                        p.description.contains(q, ignoreCase = true) ||
+                                        p.trackingCode.contains(q) ||
+                                        p.date.contains(q)
+                            }
+                        }
+                        list
+                    }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -221,7 +269,20 @@ fun FinanceScreen(
                     }
                 }
                 1 -> { // Payments to Customers (پرداخت به مشتری)
-                    val customerPayments = remember(payments) { payments.filter { it.type == "PAYMENT" } }
+                    val customerPayments = remember(payments, searchQuery, customers) {
+                        var list = payments.filter { it.type == "PAYMENT" }
+                        if (searchQuery.isNotBlank()) {
+                            val q = searchQuery.trim()
+                            list = list.filter { p ->
+                                val cust = customers.firstOrNull { it.id == p.customerId }
+                                (cust?.name?.contains(q, ignoreCase = true) == true) ||
+                                        p.description.contains(q, ignoreCase = true) ||
+                                        p.trackingCode.contains(q) ||
+                                        p.date.contains(q)
+                            }
+                        }
+                        list
+                    }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -252,10 +313,10 @@ fun FinanceScreen(
                         if (customerPayments.isEmpty()) {
                             item {
                                 EmptyStateView(
-                                    title = "پرداختی به مشتری ثبت نشده است",
+                                    title = if (searchQuery.isNotEmpty()) "پرداختی یافت نشد" else "پرداختی به مشتری ثبت نشده است",
                                     message = "برای ثبت استرداد وجه یا پرداخت به مشتری، دکمه بالا را لمس کنید.",
                                     icon = Icons.Default.Payments,
-                                    actionButtonText = "پرداخت به مشتری",
+                                    actionButtonText = if (searchQuery.isEmpty()) "پرداخت به مشتری" else null,
                                     onActionClick = {
                                         paymentDialogType = "PAYMENT"
                                         showPaymentDialog = true
@@ -316,13 +377,26 @@ fun FinanceScreen(
                         }
                     }
                 }
-                2 -> { // Checks
-                    if (checks.isEmpty()) {
+                2 -> { // Checks (چک‌ها)
+                    val filteredChecks = remember(checks, searchQuery, customers) {
+                        if (searchQuery.isBlank()) checks
+                        else {
+                            val q = searchQuery.trim()
+                            checks.filter { chk ->
+                                val customer = customers.firstOrNull { it.id == chk.customerId }
+                                (customer?.name?.contains(q, ignoreCase = true) == true) ||
+                                        chk.bankName.contains(q, ignoreCase = true) ||
+                                        chk.sayadNumber.contains(q) ||
+                                        chk.dueDate.contains(q)
+                            }
+                        }
+                    }
+                    if (filteredChecks.isEmpty()) {
                         EmptyStateView(
-                            title = "چکی ثبت نشده است",
+                            title = if (searchQuery.isNotEmpty()) "چکی یافت نشد" else "چکی ثبت نشده است",
                             message = "ثبت مشخصات چک‌های صیادی و موعد سررسید آنها",
                             icon = Icons.Default.ReceiptLong,
-                            actionButtonText = "ثبت چک جدید",
+                            actionButtonText = if (searchQuery.isEmpty()) "ثبت چک جدید" else null,
                             onActionClick = { showCheckDialog = true }
                         )
                     } else {
@@ -334,7 +408,7 @@ fun FinanceScreen(
                             contentPadding = PaddingValues(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(checks, key = { it.id }) { chk ->
+                            items(filteredChecks, key = { it.id }) { chk ->
                                 val customer = customers.firstOrNull { it.id == chk.customerId }
                                 val isOverdue = chk.status == "PENDING" && chk.dueDate <= todayStr
                                 AppCard(
@@ -416,12 +490,23 @@ fun FinanceScreen(
                     }
                 }
                 3 -> { // Expenses
-                    if (expenses.isEmpty()) {
+                    val filteredExpenses = remember(expenses, searchQuery) {
+                        if (searchQuery.isBlank()) expenses
+                        else {
+                            val q = searchQuery.trim()
+                            expenses.filter { exp ->
+                                exp.category.contains(q, ignoreCase = true) ||
+                                        exp.description.contains(q, ignoreCase = true) ||
+                                        exp.date.contains(q)
+                            }
+                        }
+                    }
+                    if (filteredExpenses.isEmpty()) {
                         EmptyStateView(
-                            title = "هزینه‌ای ثبت نشده است",
+                            title = if (searchQuery.isNotEmpty()) "هزینه‌ای یافت نشد" else "هزینه‌ای ثبت نشده است",
                             message = "هزینه‌های کارگاه، متریال، بالابر، کارگر و قطعات را برای محاسبه دقیق سود و زیان ثبت کنید.",
                             icon = Icons.Default.MoneyOff,
-                            actionButtonText = "ثبت هزینه جدید",
+                            actionButtonText = if (searchQuery.isEmpty()) "ثبت هزینه جدید" else null,
                             onActionClick = { showExpenseDialog = true }
                         )
                     } else {
@@ -432,7 +517,7 @@ fun FinanceScreen(
                             contentPadding = PaddingValues(bottom = 80.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(expenses, key = { it.id }) { exp ->
+                            items(filteredExpenses, key = { it.id }) { exp ->
                                 AppCard {
                                     Row(
                                         modifier = Modifier
@@ -694,3 +779,114 @@ private fun DetailItem(
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isBold) FontWeight.Bold else FontWeight.Medium, color = valueColor)
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Finance Screen Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun FinanceScreenPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        AppTopBar(
+                            title = "امور مالی و حسابداری",
+                            actions = {
+                                IconButton(onClick = {}) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "جستجو",
+                                        tint = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        )
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = {},
+                            containerColor = MoneyPositive,
+                            contentColor = androidx.compose.ui.graphics.Color.White,
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "افزودن سند مالی")
+                        }
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        ScrollableTabRow(
+                            selectedTabIndex = 0,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی").forEachIndexed { index, title ->
+                                Tab(
+                                    selected = index == 0,
+                                    onClick = {},
+                                    text = { Text(title, fontWeight = FontWeight.Bold) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Button(
+                                onClick = {},
+                                colors = ButtonDefaults.buttonColors(containerColor = MoneyPositive),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("دریافت از مشتری", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            AppCard {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "دریافت از: مهندس علیرضا رضایی",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MoneyPositive
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "تاریخ: ۱۴۰۳/۰۸/۱۲ • روش: کارت به کارت • پیگیری: ۹۸۷۶۵۴",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Text(
+                                        text = FormatUtils.formatCurrency(15000000L, "TOMAN"),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MoneyPositive
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

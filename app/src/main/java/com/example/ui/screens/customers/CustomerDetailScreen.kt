@@ -43,10 +43,10 @@ fun CustomerDetailScreen(
     var showEditDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             AppTopBar(
-                title = customer?.name ?: "جزئیات مشتری",
-                subtitle = customer?.phone,
+                title = "پرونده مشتری",
                 onBack = onBack,
                 actions = {
                     IconButton(onClick = { showEditDialog = true }) {
@@ -81,11 +81,11 @@ fun CustomerDetailScreen(
                             Column {
                                 Text(
                                     text = cust.name,
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "تلفن: ${cust.phone} | کد ملی: ${cust.nationalCode.ifEmpty { "قید نشده" }}",
+                                    text = "تلفن: ${FormatUtils.formatPhoneNumber(cust.phone)} | کد ملی: ${cust.nationalCode.ifEmpty { "قید نشده" }}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -401,3 +401,102 @@ private fun DetailRow(
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = if (isBold) FontWeight.Bold else FontWeight.Medium, color = valueColor)
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Customer Detail Screen Preview",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun CustomerDetailScreenPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        AppTopBar(
+                            title = "پرونده مشتری",
+                            onBack = {},
+                            actions = {
+                                IconButton(onClick = {}) {
+                                    Icon(Icons.Default.Edit, contentDescription = "ویرایش مشتری")
+                                }
+                            }
+                        )
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        AppCard(
+                            modifier = Modifier.padding(16.dp),
+                            borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "مهندس علیرضا رضایی",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "تلفن: ${FormatUtils.formatPhoneNumber("09121112233")} | کد ملی: ۰۰۱۴۵۵۶۷۸۹",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Surface(
+                                        color = MoneyNegative.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text(
+                                            text = "بدهکار",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MoneyNegative,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "نشانی: تهران، خیابان شریعتی، مجتمع میلاد",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        ScrollableTabRow(
+                            selectedTabIndex = 0,
+                            edgePadding = 16.dp
+                        ) {
+                            listOf("پروژه‌ها", "فاکتور و قرارداد", "پرداخت‌ها", "چک‌ها", "تراز مالی").forEachIndexed { index, tab ->
+                                Tab(
+                                    selected = index == 0,
+                                    onClick = {},
+                                    text = { Text(tab, fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Normal) }
+                                )
+                            }
+                        }
+
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("محتوای اطلاعات مشتری...", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

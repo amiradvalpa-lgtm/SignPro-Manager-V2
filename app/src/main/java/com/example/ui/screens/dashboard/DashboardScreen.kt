@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entities.UserEntity
 import com.example.data.preferences.ContractorInfo
+import com.example.ui.components.common.AppHeaderDivider
 import com.example.ui.navigation.Screen
 import com.example.ui.theme.*
 import com.example.ui.viewmodels.SignageViewModel
@@ -254,10 +255,7 @@ fun DashboardContent(
                             containerColor = MaterialTheme.colorScheme.surface
                         )
                     )
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                    )
+                    AppHeaderDivider()
                 }
             }
         ) { padding ->
