@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.pickers.PersianDatePickerModal
 import com.example.util.FormatUtils
@@ -334,14 +336,31 @@ fun SwipeToRevealCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
+    isRevealed: Boolean = false,
+    onExpanded: (() -> Unit)? = null,
+    onCollapsed: (() -> Unit)? = null,
     editContentDescription: String = "ویرایش",
     deleteContentDescription: String = "حذف",
     content: @Composable () -> Unit
 ) {
     val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
     val maxRevealPx = remember(density) { with(density) { 130.dp.toPx() } }
     val offsetX = remember { Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Collapse card automatically when another card is revealed (isRevealed becomes false)
+    LaunchedEffect(isRevealed) {
+        if (!isRevealed && offsetX.value != 0f) {
+            offsetX.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow
+                )
+            )
+        }
+    }
 
     Box(
         modifier = modifier
@@ -357,14 +376,17 @@ fun SwipeToRevealCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Actions when card moves to left or right (available on both ends for intuitive RTL/LTR drag)
+            // Actions when card moves (available on both ends for intuitive RTL/LTR drag)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilledIconButton(
                     onClick = {
-                        coroutineScope.launch { offsetX.animateTo(0f) }
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f)
+                            onCollapsed?.invoke()
+                        }
                         onEdit()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -382,7 +404,10 @@ fun SwipeToRevealCard(
 
                 FilledIconButton(
                     onClick = {
-                        coroutineScope.launch { offsetX.animateTo(0f) }
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f)
+                            onCollapsed?.invoke()
+                        }
                         onDelete()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -405,7 +430,10 @@ fun SwipeToRevealCard(
             ) {
                 FilledIconButton(
                     onClick = {
-                        coroutineScope.launch { offsetX.animateTo(0f) }
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f)
+                            onCollapsed?.invoke()
+                        }
                         onEdit()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -423,7 +451,10 @@ fun SwipeToRevealCard(
 
                 FilledIconButton(
                     onClick = {
-                        coroutineScope.launch { offsetX.animateTo(0f) }
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f)
+                            onCollapsed?.invoke()
+                        }
                         onDelete()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -450,7 +481,11 @@ fun SwipeToRevealCard(
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
-                            val newOffset = (offsetX.value + dragAmount).coerceIn(-maxRevealPx, maxRevealPx)
+                            // In RTL, Modifier.offset { IntOffset(x, 0) } uses placeRelativeWithLayer where positive x
+                            // moves towards End (Left in RTL). Reversing raw dragAmount in RTL makes the card move
+                            // exactly 1:1 in the direction the user moves their finger.
+                            val dragDelta = if (layoutDirection == LayoutDirection.Rtl) -dragAmount else dragAmount
+                            val newOffset = (offsetX.value + dragDelta).coerceIn(-maxRevealPx, maxRevealPx)
                             coroutineScope.launch {
                                 offsetX.snapTo(newOffset)
                             }
@@ -462,6 +497,11 @@ fun SwipeToRevealCard(
                                     current > maxRevealPx * 0.35f -> maxRevealPx
                                     current < -maxRevealPx * 0.35f -> -maxRevealPx
                                     else -> 0f
+                                }
+                                if (target != 0f) {
+                                    onExpanded?.invoke()
+                                } else {
+                                    onCollapsed?.invoke()
                                 }
                                 offsetX.animateTo(
                                     targetValue = target,
@@ -475,6 +515,7 @@ fun SwipeToRevealCard(
                         onDragCancel = {
                             coroutineScope.launch {
                                 offsetX.animateTo(0f)
+                                onCollapsed?.invoke()
                             }
                         }
                     )
@@ -482,7 +523,10 @@ fun SwipeToRevealCard(
                 .then(
                     if (abs(offsetX.value) > 1f) {
                         Modifier.clickable {
-                            coroutineScope.launch { offsetX.animateTo(0f) }
+                            coroutineScope.launch {
+                                offsetX.animateTo(0f)
+                                onCollapsed?.invoke()
+                            }
                         }
                     } else Modifier
                 )

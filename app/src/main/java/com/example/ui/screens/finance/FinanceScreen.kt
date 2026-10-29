@@ -275,6 +275,7 @@ fun FinanceScreen(
                         }
                         list
                     }
+                    var openedPaymentId by remember { mutableStateOf<String?>(null) }
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -299,11 +300,18 @@ fun FinanceScreen(
                             items(customerPayments, key = { it.id }) { pay ->
                                 val customer = customers.firstOrNull { it.id == pay.customerId }
                                 SwipeToRevealCard(
+                                    isRevealed = (openedPaymentId == pay.id),
+                                    onExpanded = { openedPaymentId = pay.id },
+                                    onCollapsed = { if (openedPaymentId == pay.id) openedPaymentId = null },
                                     onEdit = {
+                                        openedPaymentId = null
                                         paymentDialogType = "PAYMENT"
                                         selectedPaymentForEdit = pay
                                     },
-                                    onDelete = { paymentToDelete = pay },
+                                    onDelete = {
+                                        openedPaymentId = null
+                                        paymentToDelete = pay
+                                    },
                                     modifier = Modifier.testTag("payment_item_${pay.id}")
                                 ) {
                                     AppCard {
