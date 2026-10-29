@@ -302,7 +302,7 @@ fun AppCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     containerColor: Color = MaterialTheme.colorScheme.surface,
-    borderColor: Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    borderColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
     content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
@@ -311,8 +311,8 @@ fun AppCard(
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
-        border = BorderStroke(1.dp, borderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(0.75.dp, borderColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         content = content
     )
 }

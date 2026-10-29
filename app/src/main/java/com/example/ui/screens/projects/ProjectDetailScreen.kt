@@ -841,8 +841,8 @@ fun VerticalStepProgressBar(
                         val lineColor = if (isCompleted) Color(0xFF16A34A) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
                         Box(
                             modifier = Modifier
-                                .width(2.5.dp)
-                                .height(20.dp)
+                                .width(2.0.dp)
+                                .height(10.dp)
                                 .background(lineColor)
                         )
                     }
@@ -950,7 +950,7 @@ fun ProjectFinancialSummaryCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+        border = androidx.compose.foundation.BorderStroke(0.75.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -1049,7 +1049,8 @@ fun ProjectNavigationButtonsCard(
             onClick = onNavigateToSpecs,
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border = androidx.compose.foundation.BorderStroke(0.75.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("btn_navigate_specs")
@@ -1110,7 +1111,8 @@ fun ProjectNavigationButtonsCard(
             onClick = onNavigateToInvoice,
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            border = androidx.compose.foundation.BorderStroke(0.75.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("btn_navigate_invoice")

@@ -254,8 +254,15 @@ fun CustomerHeaderCard(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "شماره تماس: ${FormatUtils.formatPhoneNumber(customer.phone)} | کد ملی: ${customer.nationalCode.ifEmpty { "قید نشده" }}",
+                        text = "شماره تماس: ${FormatUtils.formatPhoneNumber(customer.phone)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "کد ملی: ${customer.nationalCode.ifEmpty { "قید نشده" }}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -364,16 +371,40 @@ fun CustomerContractCard(
     modifier: Modifier = Modifier
 ) {
     AppCard(modifier = modifier) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("قرارداد مورخه ${contract.contractDate}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text(FormatUtils.formatCurrency(contract.totalAmount - contract.discount, currencyUnit), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "قرارداد مورخه ${contract.contractDate}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "مدت اجرا: ${contract.durationDays} روز",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("پیش‌پرداخت: ${FormatUtils.formatCurrency(contract.prepayment, currencyUnit)} | مدت اجرا: ${contract.durationDays} روز", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = FormatUtils.formatCurrency(contract.totalAmount - contract.discount, currencyUnit),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "پیش‌پرداخت: ${FormatUtils.formatCurrency(contract.prepayment, currencyUnit)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -392,24 +423,34 @@ fun CustomerPaymentCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    if (payment.type == "RECEIPT") "دریافت از مشتری" else "استرداد/پرداخت به مشتری",
+                    text = if (payment.type == "RECEIPT") "دریافت از مشتری" else "استرداد/پرداخت به مشتری",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = if (payment.type == "RECEIPT") MoneyPositive else MoneyNegative
                 )
-                Text("روش: ${payment.method} • تاریخ: ${payment.date}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (payment.trackingCode.isNotEmpty()) {
-                    Text("کد پیگیری: ${payment.trackingCode}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "روش: ${payment.method}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Text(
-                text = FormatUtils.formatCurrency(payment.amount, currencyUnit),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (payment.type == "RECEIPT") MoneyPositive else MoneyNegative
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = FormatUtils.formatCurrency(payment.amount, currencyUnit),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (payment.type == "RECEIPT") MoneyPositive else MoneyNegative
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "تاریخ: ${payment.date}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -428,12 +469,32 @@ fun CustomerCheckCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("بانک: ${check.bankName.ifEmpty { "نامشخص" }} (سررسید: ${check.dueDate})", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                Text("شماره صیاد: ${check.sayadNumber.ifEmpty { check.checkNumber.ifEmpty { "ثبت نشده" } }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "بانک: ${check.bankName.ifEmpty { "نامشخص" }}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "شماره صیاد: ${check.sayadNumber.ifEmpty { check.checkNumber.ifEmpty { "ثبت نشده" } }}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "سررسید: ${check.dueDate}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text(FormatUtils.formatCurrency(check.amount, currencyUnit), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = FormatUtils.formatCurrency(check.amount, currencyUnit),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 StatusBadge(
                     status = when (check.status) {
                         "CLEARED" -> "وصول شده"

@@ -209,8 +209,10 @@ fun ProjectInvoiceContent(
             ExtendedFloatingActionButton(
                 onClick = onAddItem,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("افزودن ردیف فاکتور") },
+                text = { Text("افزودن ردیف فاکتور", fontWeight = FontWeight.Bold) },
                 shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.testTag("fab_add_invoice_item")
             )
         }
@@ -267,7 +269,7 @@ fun ProjectInvoiceContent(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(100.dp))
                 }
             }
         }
