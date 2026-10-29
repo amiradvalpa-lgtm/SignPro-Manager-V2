@@ -477,12 +477,6 @@ fun CustomerCheckCard(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "شماره صیاد: ${check.sayadNumber.ifEmpty { check.checkNumber.ifEmpty { "ثبت نشده" } }}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
                     text = "سررسید: ${check.dueDate}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

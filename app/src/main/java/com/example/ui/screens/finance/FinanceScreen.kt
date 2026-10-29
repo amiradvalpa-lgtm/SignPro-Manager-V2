@@ -181,31 +181,11 @@ fun FinanceScreen(
                         contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Prominent Green Action Button
-                        item {
-                            Button(
-                                onClick = {
-                                    paymentDialogType = "RECEIPT"
-                                    showPaymentDialog = true
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = MoneyPositive),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                                    .testTag("add_receipt_btn")
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("دریافت از مشتری", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
                         if (receipts.isEmpty()) {
                             item {
                                 EmptyStateView(
                                     title = "دریافتی ثبت نشده است",
-                                    message = "برای ثبت دریافت نقدی، پوز یا واریزی مشتری، دکمه بالا را لمس کنید.",
+                                    message = "برای ثبت دریافت نقدی، پوز یا واریزی مشتری، از دکمه شناور (+) استفاده کنید.",
                                     icon = Icons.Default.Payments,
                                     actionButtonText = "دریافت از مشتری",
                                     onActionClick = {
@@ -218,41 +198,21 @@ fun FinanceScreen(
                             items(receipts, key = { it.id }) { pay ->
                                 val customer = customers.firstOrNull { it.id == pay.customerId }
                                 AppCard {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        // Top Row: Customer Name on right (Start), 3-Dots Menu on left (End)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Text(
-                                                text = "دریافت از: ${customer?.name ?: "نامشخص"}",
-                                                style = MaterialTheme.typography.titleMedium,
+                                                text = customer?.name ?: "نامشخص",
+                                                style = MaterialTheme.typography.titleSmall,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MoneyPositive
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "تاریخ: ${pay.date} • روش: ${pay.method} ${if (pay.trackingCode.isNotEmpty()) "• پیگیری: " + pay.trackingCode else ""}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            if (pay.description.isNotEmpty()) {
-                                                Text(
-                                                    text = "توضیح: ${pay.description}",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyPositive
+                                                color = MoneyPositive,
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 8.dp)
                                             )
                                             CardOverflowMenu(
                                                 onEdit = {
@@ -260,6 +220,38 @@ fun FinanceScreen(
                                                     selectedPaymentForEdit = pay
                                                 },
                                                 onDelete = { paymentToDelete = pay }
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // Bottom Row: Date & Method on right (Start), Amount on left (End)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "تاریخ: ${pay.date} • روش: ${pay.method}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                if (pay.description.isNotEmpty()) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "توضیح: ${pay.description}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+
+                                            Text(
+                                                text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MoneyPositive
                                             )
                                         }
                                     }
@@ -290,31 +282,11 @@ fun FinanceScreen(
                         contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Prominent Red Action Button
-                        item {
-                            Button(
-                                onClick = {
-                                    paymentDialogType = "PAYMENT"
-                                    showPaymentDialog = true
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = MoneyNegative),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                                    .testTag("add_payment_btn")
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("پرداخت به مشتری", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
                         if (customerPayments.isEmpty()) {
                             item {
                                 EmptyStateView(
                                     title = if (searchQuery.isNotEmpty()) "پرداختی یافت نشد" else "پرداختی به مشتری ثبت نشده است",
-                                    message = "برای ثبت استرداد وجه یا پرداخت به مشتری، دکمه بالا را لمس کنید.",
+                                    message = "برای ثبت استرداد وجه یا پرداخت به مشتری، از دکمه شناور (+) استفاده کنید.",
                                     icon = Icons.Default.Payments,
                                     actionButtonText = if (searchQuery.isEmpty()) "پرداخت به مشتری" else null,
                                     onActionClick = {
@@ -326,50 +298,70 @@ fun FinanceScreen(
                         } else {
                             items(customerPayments, key = { it.id }) { pay ->
                                 val customer = customers.firstOrNull { it.id == pay.customerId }
-                                AppCard {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = "پرداخت به: ${customer?.name ?: "نامشخص"}",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyNegative
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "تاریخ: ${pay.date} • روش: ${pay.method} ${if (pay.trackingCode.isNotEmpty()) "• پیگیری: " + pay.trackingCode else ""}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                            if (pay.description.isNotEmpty()) {
+                                SwipeToRevealCard(
+                                    onEdit = {
+                                        paymentDialogType = "PAYMENT"
+                                        selectedPaymentForEdit = pay
+                                    },
+                                    onDelete = { paymentToDelete = pay },
+                                    modifier = Modifier.testTag("payment_item_${pay.id}")
+                                ) {
+                                    AppCard {
+                                        Column(modifier = Modifier.padding(14.dp)) {
+                                            // Top Row: Customer Name on right (Start), Amount on left (End)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 Text(
-                                                    text = "توضیح: ${pay.description}",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    text = customer?.name ?: "نامشخص",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MoneyNegative,
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .padding(end = 8.dp)
+                                                )
+
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MoneyNegative
                                                 )
                                             }
-                                        }
 
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyNegative
-                                            )
-                                            CardOverflowMenu(
-                                                onEdit = {
-                                                    paymentDialogType = "PAYMENT"
-                                                    selectedPaymentForEdit = pay
-                                                },
-                                                onDelete = { paymentToDelete = pay }
-                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            // Bottom Row: Date & Method on right (Start), Swipe hint on left (End)
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "تاریخ: ${pay.date} • روش: ${pay.method}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                    if (pay.description.isNotEmpty()) {
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            text = "توضیح: ${pay.description}",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+
+                                                Text(
+                                                    text = "برای عملیات بکشید",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                                )
+                                            }
                                         }
                                     }
                                 }
