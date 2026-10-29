@@ -278,15 +278,19 @@ object SampleDataGenerator {
             ExpenseEntity(
                 id = "sample_exp_2",
                 invoiceId = invoice1.id,
-                category = "بلوک اس‌ام‌دی (SMD)",
-                amount = 3200000L,
+                projectId = "sample_prj_1",
+                expenseType = "INVOICE",
+                category = "کرایه جرثقیل و بالابر نصب",
+                amount = 2500000L,
                 date = dateTwoWeeksAgo,
-                description = "خرید ۵۰۰ عدد اس‌ام‌دی آفتابی سامسونگ لنزدار ضدآب",
+                description = "هزینه بالابر جهت نصب حروف در ارتفاع (فاکتور شده به مشتری)",
                 userId = "admin"
             ),
             ExpenseEntity(
                 id = "sample_exp_3",
                 invoiceId = invoice2.id,
+                projectId = "sample_prj_2",
+                expenseType = "INVOICE",
                 category = "کرایه جرثقیل و بالابر",
                 amount = 3500000L,
                 date = dateWeekAgo,

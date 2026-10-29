@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.data.local.entities.*
 import com.example.ui.components.common.*
 import com.example.ui.theme.MoneyNegative
@@ -377,7 +378,7 @@ fun ProjectOverviewCard(
                     Column {
                         Text(
                             text = project.title,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -400,10 +401,10 @@ fun ProjectOverviewCard(
                 ) {
                     Text(
                         text = chipDisplay.label,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
                         fontWeight = FontWeight.Bold,
                         color = chipColor,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -429,8 +430,8 @@ fun ProjectOverviewCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "کارفرما: ${customer?.name ?: "نامشخص"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                     )
                 }
 
@@ -444,8 +445,8 @@ fun ProjectOverviewCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "تاریخ شروع: ${project.startDate}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
                     )
                 }
             }
@@ -627,7 +628,7 @@ fun ProjectStagePipelineCard(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Custom Status Dropdown Button matching reference design
+                // Custom Status Dropdown Button matching reference design (RTL: status on right, arrow on left)
                 Box(modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
@@ -647,22 +648,8 @@ fun ProjectStagePipelineCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-
+                            // Status dot + label on the RIGHT in RTL
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = currentStatusLabel,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                // Status colored dot
                                 val dotColor = when (projectStatus) {
                                     "ACTIVE", "جاری", "در حال ساخت" -> Color(0xFF16A34A)
                                     "COMPLETED", "تکمیل شده", "تکمیل‌شده" -> Color(0xFF0284C7)
@@ -675,7 +662,22 @@ fun ProjectStagePipelineCard(
                                         .clip(CircleShape)
                                         .background(dotColor)
                                 )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = currentStatusLabel,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
+
+                            // Arrow on the LEFT in RTL
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
                         }
                     }
 
@@ -705,6 +707,7 @@ fun ProjectStagePipelineCard(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
                         contentColor = MaterialTheme.colorScheme.primary
                     ),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(
@@ -712,11 +715,13 @@ fun ProjectStagePipelineCard(
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "ویرایش مراحل",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -765,22 +770,7 @@ fun VerticalStepProgressBar(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Step title (Right side in RTL)
-                Text(
-                    text = displayTitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isActive || isCompleted) FontWeight.Bold else FontWeight.Normal,
-                    color = when {
-                        isActive -> Color(0xFFDC2626) // Red color for active stage per user instruction
-                        isCompleted -> MaterialTheme.colorScheme.onSurface
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 10.dp, top = 2.dp)
-                )
-
-                // Timeline node + vertical connecting line
+                // Timeline node + vertical connecting line (Right side in RTL)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
                         modifier = Modifier.size(24.dp),
@@ -857,6 +847,21 @@ fun VerticalStepProgressBar(
                         )
                     }
                 }
+
+                // Step title (to the left of the node in RTL)
+                Text(
+                    text = displayTitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = if (isActive || isCompleted) FontWeight.Bold else FontWeight.Normal,
+                    color = when {
+                        isActive -> Color(0xFFDC2626) // Red color for active stage per user instruction
+                        isCompleted -> MaterialTheme.colorScheme.onSurface
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp, top = 2.dp)
+                )
             }
         }
     }
@@ -942,9 +947,11 @@ fun ProjectFinancialSummaryCard(
 ) {
     val finalNet = itemsSum - discount + invoiceExpensesSum
 
-    AppCard(
-        modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -980,10 +987,19 @@ fun ProjectFinancialSummaryCard(
             }
 
             if (invoiceExpensesSum > 0) {
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("هزینه‌های فاکتور شده:", style = MaterialTheme.typography.bodyMedium)
-                    Text("+ ${FormatUtils.formatCurrency(invoiceExpensesSum, currencyUnit)}", fontWeight = FontWeight.Bold, color = MoneyNegative)
+                    Text(
+                        text = "هزینه‌های فاکتور شده:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFDC2626)
+                    )
+                    Text(
+                        text = "+ ${FormatUtils.formatCurrency(invoiceExpensesSum, currencyUnit)}",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFDC2626)
+                    )
                 }
             }
 

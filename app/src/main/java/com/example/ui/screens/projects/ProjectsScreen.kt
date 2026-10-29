@@ -231,7 +231,7 @@ fun ProjectListItem(
             ) {
                 Text(
                     text = project.title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
@@ -329,15 +329,10 @@ fun ProjectListItem(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Two-column aligned metadata rows
+            // Two-column aligned metadata rows (Customer and Start Date)
             ProjectDetailRow(label = "کارفرما:", value = customerName)
             Spacer(modifier = Modifier.height(4.dp))
             ProjectDetailRow(label = "تاریخ شروع:", value = project.startDate)
-
-            if (project.description.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                ProjectDetailRow(label = "توضیحات:", value = project.description)
-            }
         }
     }
 }
