@@ -79,6 +79,26 @@ class SignageRepository(private val database: AppDatabase) {
 
     suspend fun updateProjectStages(projectId: String, stageId: String?, completedStageIds: String) {
         projectDao.updateProjectStages(projectId, stageId, completedStageIds)
+        val project = projectDao.getProjectById(projectId) ?: return
+        val stages = projectStageDao.getAllStagesOnce()
+        if (stages.isEmpty()) return
+
+        val completedSet = completedStageIds.split(",").filter { it.isNotBlank() }.toSet()
+        val allCompleted = stages.all { completedSet.contains(it.id) }
+
+        // Auto-complete rule: Only apply to active projects or projects previously completed via stages
+        val isExplicitHoldOrCancelled = project.status == "PENDING" || project.status == "معلق" ||
+                project.status == "CANCELLED" || project.status == "لغوشده" || project.status == "لغو شده"
+
+        if (!isExplicitHoldOrCancelled) {
+            if (allCompleted && project.status != "COMPLETED") {
+                projectDao.updateProjectStatus(projectId, "COMPLETED")
+                logAudit("Project", projectId, "STATUS_CHANGE", "تکمیل خودکار پروژه پس از انجام تمام مراحل اجرایی", "system")
+            } else if (!allCompleted && (project.status == "COMPLETED" || project.status == "تکمیل شده" || project.status == "تکمیل‌شده")) {
+                projectDao.updateProjectStatus(projectId, "ACTIVE")
+                logAudit("Project", projectId, "STATUS_CHANGE", "بازگشت خودکار پروژه به وضعیت جاری به دلیل عدم تکمیل برخی مراحل", "system")
+            }
+        }
     }
 
     suspend fun updateProjectStatus(projectId: String, status: String) {

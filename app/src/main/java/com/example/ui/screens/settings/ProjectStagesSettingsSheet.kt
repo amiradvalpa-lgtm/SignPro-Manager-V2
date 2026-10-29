@@ -132,21 +132,31 @@ fun ProjectStagesSettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
+                                    // Enlarged circle with order number inside
                                     Box(
                                         modifier = Modifier
-                                            .size(18.dp)
+                                            .size(34.dp)
                                             .clip(CircleShape)
-                                            .background(stageColor)
-                                    )
+                                            .background(stageColor),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stage.displayOrder.toString(),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         Text(
                                             text = stage.title,
                                             style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = "اولویت ترتیب: ${stage.displayOrder}",
+                                            text = if (stage.description.isNotBlank()) stage.description else "بدون توضیح",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -286,6 +296,7 @@ fun StageEditDialog(
 ) {
     val isNew = stage == null
     var title by remember { mutableStateOf(stage?.title ?: "") }
+    var description by remember { mutableStateOf(stage?.description ?: "") }
     var selectedColor by remember { mutableStateOf(stage?.colorHex ?: "#3B82F6") }
     var titleError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
@@ -295,11 +306,11 @@ fun StageEditDialog(
         "#8B5CF6", "#EC4899", "#14B8A6", "#6366F1"
     )
 
-    val isDirty = remember(title, selectedColor) {
+    val isDirty = remember(title, description, selectedColor) {
         if (isNew) {
-            title.isNotBlank()
+            title.isNotBlank() || description.isNotBlank()
         } else {
-            title != (stage?.title ?: "") || selectedColor != (stage?.colorHex ?: "")
+            title != (stage?.title ?: "") || description != (stage?.description ?: "") || selectedColor != (stage?.colorHex ?: "")
         }
     }
 
@@ -317,11 +328,13 @@ fun StageEditDialog(
         } else {
             val entity = stage?.copy(
                 name = title.trim(),
+                description = description.trim(),
                 colorHex = selectedColor,
                 updatedAt = System.currentTimeMillis()
             ) ?: ProjectStageEntity(
                 id = UUID.randomUUID().toString(),
                 name = title.trim(),
+                description = description.trim(),
                 displayOrder = nextOrder,
                 colorHex = selectedColor
             )
@@ -352,9 +365,16 @@ fun StageEditDialog(
                     titleError = null
                 },
                 label = "عنوان مرحله",
-                placeholder = "مثال: خم‌کاری چلنیوم، جوشکاری اسکلت",
+                placeholder = "مثال: مذاکره، طراحی، ساخت",
                 isError = titleError != null,
                 errorMessage = titleError
+            )
+
+            PersianTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = "توضیح مرحله (نمایش در تایم‌لاین کارگاه)",
+                placeholder = "مثال: ساخت و مونتاژ کارگاه"
             )
 
             Column {
@@ -454,27 +474,38 @@ fun ProjectStagesSettingsScreenPreview() {
                 stages = listOf(
                     ProjectStageEntity(
                         id = "1",
-                        name = "طراحی و تأیید طرح",
+                        name = "مذاکره",
+                        description = "مذاکره و تاییدیه",
                         displayOrder = 1,
-                        colorHex = "#3B82F6"
-                    ),
-                    ProjectStageEntity(
-                        id = "2",
-                        name = "برش لیزر و ورق‌کاری",
-                        displayOrder = 2,
-                        colorHex = "#F59E0B"
-                    ),
-                    ProjectStageEntity(
-                        id = "3",
-                        name = "مونتاژ و سیم‌کشی SMD",
-                        displayOrder = 3,
                         colorHex = "#10B981"
                     ),
                     ProjectStageEntity(
+                        id = "2",
+                        name = "طراحی",
+                        description = "طراحی و شبیه‌سازی",
+                        displayOrder = 2,
+                        colorHex = "#0284C7"
+                    ),
+                    ProjectStageEntity(
+                        id = "3",
+                        name = "ساخت",
+                        description = "ساخت و مونتاژ کارگاه",
+                        displayOrder = 3,
+                        colorHex = "#E11D48"
+                    ),
+                    ProjectStageEntity(
                         id = "4",
-                        name = "نصب در محل و تحویل نهایی",
+                        name = "نصب",
+                        description = "نصب و راه‌اندازی",
                         displayOrder = 4,
-                        colorHex = "#8B5CF6"
+                        colorHex = "#7C3AED"
+                    ),
+                    ProjectStageEntity(
+                        id = "5",
+                        name = "تسویه",
+                        description = "تسویه حساب و تحویل",
+                        displayOrder = 5,
+                        colorHex = "#0D9488"
                     )
                 ),
                 onBack = {},

@@ -30,6 +30,7 @@ fun ProjectsScreen(
 ) {
     val projects by viewModel.projects.collectAsState()
     val customers by viewModel.customers.collectAsState()
+    val stages by viewModel.stages.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
 
     var isSearchOpen by remember { mutableStateOf(false) }
@@ -39,13 +40,21 @@ fun ProjectsScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var projectToDelete by remember { mutableStateOf<ProjectEntity?>(null) }
 
-    val filterOptions = listOf("همه", "در حال مذاکره", "طراحی", "در حال ساخت", "نصب", "تکمیل شده", "تسویه شده")
+    val filterOptions = remember(stages) {
+        val sortedStages = stages.sortedBy { it.displayOrder }
+        val list = mutableListOf("همه")
+        sortedStages.forEach { list.add("در مرحله ${it.name}") }
+        list.add("تکمیل‌شده")
+        list.add("معلق")
+        list.add("لغوشده")
+        list
+    }
 
-    val filteredProjects = remember(projects, searchQuery, selectedStatusFilter) {
+    val filteredProjects = remember(projects, stages, searchQuery, selectedStatusFilter) {
         projects.filter { proj ->
             val matchesSearch = searchQuery.isBlank() || proj.title.contains(searchQuery.trim(), ignoreCase = true)
-            val matchesStatus = selectedStatusFilter == "همه" || proj.status == selectedStatusFilter
-            matchesSearch && matchesStatus
+            val matchesFilter = ProjectStatusHelper.matchesFilter(proj, stages, selectedStatusFilter)
+            matchesSearch && matchesFilter
         }
     }
 
@@ -139,9 +148,11 @@ fun ProjectsScreen(
                 ) {
                     items(filteredProjects, key = { it.id }) { project ->
                         val customer = customers.firstOrNull { it.id == project.customerId }
+                        val chipDisplay = ProjectStatusHelper.getProjectChip(project, stages)
                         ProjectListItem(
                             project = project,
                             customerName = customer?.name ?: "مشتری نامشخص",
+                            chipDisplay = chipDisplay,
                             onClick = { onNavigateToProjectDetail(project.id) },
                             onEdit = { selectedProjectForEdit = project },
                             onDelete = { projectToDelete = project }
@@ -200,60 +211,160 @@ fun ProjectsScreen(
 fun ProjectListItem(
     project: ProjectEntity,
     customerName: String,
+    chipDisplay: ProjectChipDisplay,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     AppCard(
         onClick = onClick,
         modifier = Modifier.testTag("project_item_${project.id}")
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
+            // Header Row: Title on right, Status Chip + 3-Dots Menu on left
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = project.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "کارفرما: $customerName • تاریخ شروع: ${project.startDate}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                StatusBadge(status = project.status)
-            }
-
-            if (project.description.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = project.description,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2
+                    text = project.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val defaultPrimaryColor = MaterialTheme.colorScheme.primary
+                    val chipColor = remember(chipDisplay.colorHex, defaultPrimaryColor) {
+                        try {
+                            if (chipDisplay.colorHex != null) {
+                                androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(chipDisplay.colorHex))
+                            } else {
+                                defaultPrimaryColor
+                            }
+                        } catch (_: Exception) {
+                            defaultPrimaryColor
+                        }
+                    }
+
+                    Surface(
+                        color = chipColor.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = chipDisplay.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = chipColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    // 3-Dots Overflow Menu without background
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "عملیات پروژه",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("ویرایش پروژه") },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onEdit()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "حذف پروژه",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onDelete()
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "ویرایش", tint = MaterialTheme.colorScheme.primary)
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.DeleteOutline, contentDescription = "حذف", tint = MaterialTheme.colorScheme.error)
-                }
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Two-column aligned metadata rows
+            ProjectDetailRow(label = "کارفرما:", value = customerName)
+            Spacer(modifier = Modifier.height(4.dp))
+            ProjectDetailRow(label = "تاریخ شروع:", value = project.startDate)
+
+            if (project.description.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                ProjectDetailRow(label = "توضیحات:", value = project.description)
             }
         }
+    }
+}
+
+@Composable
+fun ProjectDetailRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(72.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -324,10 +435,11 @@ fun ProjectsScreenPreview() {
                                 title = "تابلو چلنیوم داروخانه دکتر کریمی",
                                 customerId = "c1",
                                 startDate = "1403/08/10",
-                                status = "در حال ساخت",
+                                status = "ACTIVE",
                                 description = "طول ۵ متر با نور SMD آفتابی"
                             ),
                             customerName = "دکتر کریمی",
+                            chipDisplay = ProjectChipDisplay(label = "در مرحله ساخت", colorHex = "#E11D48"),
                             onClick = {},
                             onEdit = {},
                             onDelete = {}
@@ -339,10 +451,11 @@ fun ProjectsScreenPreview() {
                                 title = "تابلو کامپوزیت و حروف برجسته کافه لاته",
                                 customerId = "c2",
                                 startDate = "1403/08/15",
-                                status = "طراحی",
+                                status = "ACTIVE",
                                 description = "طراحی مدرن با نور مخفی نئون"
                             ),
                             customerName = "آقای فرهمند",
+                            chipDisplay = ProjectChipDisplay(label = "در مرحله طراحی", colorHex = "#0284C7"),
                             onClick = {},
                             onEdit = {},
                             onDelete = {}

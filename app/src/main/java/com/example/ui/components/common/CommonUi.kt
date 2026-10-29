@@ -166,36 +166,95 @@ fun AppSearchBar(
     }
 }
 
+class PhoneVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val raw = text.text
+        if (raw.isEmpty()) {
+            return TransformedText(text, OffsetMapping.Identity)
+        }
+
+        val isLandline = raw.startsWith("0") && !raw.startsWith("09") && raw.length >= 3
+        val formatted = StringBuilder()
+        val firstSplit = if (isLandline) 3 else 4
+        val secondSplit = if (isLandline) 7 else 7
+
+        for (i in raw.indices) {
+            if (i == firstSplit || i == secondSplit) {
+                formatted.append(' ')
+            }
+            formatted.append(raw[i])
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                val clamped = offset.coerceIn(0, raw.length)
+                var extraSpaces = 0
+                if (clamped > firstSplit) extraSpaces++
+                if (clamped > secondSplit) extraSpaces++
+                return (clamped + extraSpaces).coerceIn(0, formatted.length)
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                val clamped = offset.coerceIn(0, formatted.length)
+                var spacesBefore = 0
+                val firstSpacePos = firstSplit
+                val secondSpacePos = secondSplit + 1
+                if (clamped > firstSpacePos) spacesBefore++
+                if (clamped > secondSpacePos) spacesBefore++
+                return (clamped - spacesBefore).coerceIn(0, raw.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(formatted.toString()), offsetMapping)
+    }
+}
+
 @Composable
 fun PhoneInputField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String = "شماره تماس",
     modifier: Modifier = Modifier,
-    placeholder: String = "۰۹۱۴ ۱۱۱ ۱۱۱۱",
+    placeholder: String = "۰۹۱۲ ۳۴۵ ۶۷۸۹",
     isError: Boolean = false,
     errorMessage: String? = null,
     testTag: String = "phone_input_field"
 ) {
-    val displayValue = remember(value) {
-        val formatted = FormatUtils.formatPhoneNumber(value)
-        // Clean out directional isolate markers within the active editing field
-        formatted.replace("\u2066", "").replace("\u2069", "").replace("\u202A", "").replace("\u202C", "")
+    // Keep raw numeric digits in state (clean without spaces or hidden markers)
+    val rawDigits = remember(value) {
+        FormatUtils.toEnglishDigits(value).filter { it.isDigit() }.take(11)
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = displayValue,
+            value = rawDigits,
             onValueChange = { input ->
-                val clean = FormatUtils.cleanAndNormalizePhone(input)
-                onValueChange(clean)
+                // Support pasted numbers (+98, spaces, dashes) vs live typing
+                val digits = if (input.contains("+") || input.contains(" ") || input.contains("-") || input.length > 11) {
+                    FormatUtils.cleanAndNormalizePhone(input)
+                } else {
+                    FormatUtils.toEnglishDigits(input).filter { it.isDigit() }.take(11)
+                }
+                onValueChange(digits)
             },
             label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
-            placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
+            placeholder = {
+                if (placeholder.isNotEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = LocalTextStyle.current.copy(
+                            textDirection = TextDirection.Ltr,
+                            textAlign = TextAlign.Right,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        )
+                    )
+                }
+            },
+            visualTransformation = remember { PhoneVisualTransformation() },
             leadingIcon = {
                 Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             },
-            trailingIcon = if (value.isNotEmpty()) {
+            trailingIcon = if (rawDigits.isNotEmpty()) {
                 {
                     IconButton(onClick = { onValueChange("") }) {
                         Icon(Icons.Default.Clear, contentDescription = "پاک کردن", modifier = Modifier.size(18.dp))

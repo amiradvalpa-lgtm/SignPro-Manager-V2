@@ -30,6 +30,7 @@ data class CustomerEntity(
 data class ProjectStageEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String,
+    val description: String = "",
     val displayOrder: Int,
     val colorHex: String = "#FF9800",
     val isDefault: Boolean = false,

@@ -56,9 +56,10 @@ object SampleDataGenerator {
         val project1 = ProjectEntity(
             id = "sample_proj_1",
             customerId = customer1.id,
-            title = "تابلوی چلنیوم طلایی دوبل کریستال طلا و جواهر رحمانی",
+            title = "تابلو چلنیوم با کامپوزیت طلا و جواهر رحمانی",
             startDate = dateTwoWeeksAgo,
-            status = "در حال ساخت",
+            status = "ACTIVE",
+            completedStageIds = "stage_1,stage_2",
             description = "متراژ برآورد شده ۴۲ متر حروف چلنیوم با پلکسی یرلانگ تایوان و ورق کامپوزیت",
             userId = "admin"
         )
@@ -67,16 +68,18 @@ object SampleDataGenerator {
             customerId = customer2.id,
             title = "نمای کامپوزیت و حروف استیل میرور برج نیایش",
             startDate = dateWeekAgo,
-            status = "در حال نصب",
+            status = "ACTIVE",
+            completedStageIds = "stage_1,stage_2,stage_3",
             description = "نصب در ارتفاع با داربست و جرثقیل کابلی - تعهد تحویل قبل از افتتاحیه",
             userId = "admin"
         )
         val project3 = ProjectEntity(
             id = "sample_proj_3",
             customerId = customer3.id,
-            title = "لایت‌باکس فریم‌لس آلومینیومی و نئون‌فلکسی کافه باران",
+            title = "لایت‌باکس فریم‌لس آلومینیومی کافه باران",
             startDate = dateToday,
-            status = "تکمیل شده",
+            status = "COMPLETED",
+            completedStageIds = "stage_1,stage_2,stage_3,stage_4,stage_5",
             description = "طراحی و اجرای تابلوهای داخلی منو و تابلوی سردر ورودی کافه",
             userId = "admin"
         )

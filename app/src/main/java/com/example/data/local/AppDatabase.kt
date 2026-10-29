@@ -29,7 +29,7 @@ import java.util.UUID
         UserEntity::class,
         AuditLogEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -88,14 +88,11 @@ abstract class AppDatabase : RoomDatabase() {
         private suspend fun seedDefaultStages(database: AppDatabase) {
             val stageDao = database.projectStageDao()
             val defaultStages = listOf(
-                ProjectStageEntity("stage_1", "مشاوره و برداشت ابعاد", 1, "#2196F3", isDefault = true),
-                ProjectStageEntity("stage_2", "طراحی سه‌بعدی و تأییدیه", 2, "#9C27B0", isDefault = true),
-                ProjectStageEntity("stage_3", "برش لیزر پلکسی و آهن", 3, "#FF9800", isDefault = true),
-                ProjectStageEntity("stage_4", "حروف‌سازی و مونتاژ لبه", 4, "#E91E63", isDefault = true),
-                ProjectStageEntity("stage_5", "سیم‌کشی و اس‌ام‌دی SMD", 5, "#009688", isDefault = true),
-                ProjectStageEntity("stage_6", "زیرسازی کامپوزیت نما", 6, "#795548", isDefault = true),
-                ProjectStageEntity("stage_7", "نصب در محل پروژه", 7, "#4CAF50", isDefault = true),
-                ProjectStageEntity("stage_8", "تست نور، تحویل و تسویه", 8, "#3F51B5", isDefault = true)
+                ProjectStageEntity("stage_1", "مذاکره", "مذاکره و تاییدیه", 1, "#10B981", isDefault = true),
+                ProjectStageEntity("stage_2", "طراحی", "طراحی و شبیه‌سازی", 2, "#0284C7", isDefault = true),
+                ProjectStageEntity("stage_3", "ساخت", "ساخت و مونتاژ کارگاه", 3, "#E11D48", isDefault = true),
+                ProjectStageEntity("stage_4", "نصب", "نصب و راه‌اندازی", 4, "#7C3AED", isDefault = true),
+                ProjectStageEntity("stage_5", "تسویه", "تسویه حساب و تحویل", 5, "#0D9488", isDefault = true)
             )
             stageDao.insertStages(defaultStages)
         }

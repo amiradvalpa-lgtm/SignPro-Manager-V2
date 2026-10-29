@@ -79,8 +79,10 @@
 | `/app/src/main/java/com/example/ui/screens/customers/CustomersScreen.kt` | صفحه مدیریت مشتریان و کارفرمایان | نمایش فهرست مشتریان، کارت‌های آماری KPI، فیلتر وضعیت، تراز مالی و استخراج تاریخچه تماس با چیدمان استاندارد RTL و تم پویا. |
 | `/app/src/main/java/com/example/ui/screens/customers/CustomerDetailScreen.kt` | جزئیات پرونده مشتری | نمایش پروژه‌ها، صورتحساب‌ها، سابقه تراکنش‌های مالی و امکان تماس مستقیم با مشتری. |
 | `/app/src/main/java/com/example/ui/screens/customers/CustomerEditDialog.kt` | فرم شیت ثبت و ویرایش مشتری | ورود نام، تلفن، کدملی، آدرس و توضیحات با نوار ثابت ذخیره/انصراف و گارد خروج. |
-| `/app/src/main/java/com/example/ui/screens/projects/ProjectsScreen.kt` | صفحه مدیریت پروژه‌ها و سفارشات | فیلتر بر اساس وضعیت، جستجوی پروژه، کارت‌های پروژه و دکمه ایجاد سفارش جدید. |
-| `/app/src/main/java/com/example/ui/screens/projects/ProjectDetailScreen.kt` | جزئیات فنی و مالی سفارش | مدیریت مراحل ساخت، مشخصات فنی تابلو، فاکتور، وضعیت مالی و صدور قرارداد. |
+| `/app/src/main/java/com/example/ui/screens/projects/ProjectsScreen.kt` | صفحه مدیریت پروژه‌ها و سفارشات | فیلتر هوشمند مراحل و وضعیت، کارت‌های دو ستونه با منوی سه‌نقطه عملیات و ایجاد سفارش جدید. |
+| `/app/src/main/java/com/example/ui/screens/projects/ProjectDetailScreen.kt` | جزئیات فنی و مالی سفارش | پرونده جامع سفارش تابلوسازی، نوار پیشرفت بازشونده، استپ‌پروگرس‌بار عمودی با انیمیشن پالس و کارت قرارداد. |
+| `/app/src/main/java/com/example/ui/screens/projects/ProjectStagesToggleSheet.kt` | شیت ویرایش مراحل پروژه | مودال شیت اختصاصی تاگل سوییچ مراحل با گارد تغییرات و اعمال خودکار به وضعیت پروژه. |
+| `/app/src/main/java/com/example/ui/screens/projects/ProjectStatusHelper.kt` | ماشین کمکی وضعیت و مراحل | مدیریت وضعیت‌های کلان (`ACTIVE`, `PENDING`, `COMPLETED`, `CANCELLED`)، محاسبه مرحله فعلی و فیلترها. |
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectEditDialog.kt` | فرم شیت ایجاد/ویرایش سفارش | تنظیم عنوان سفارش، انتخاب مشتری، نوع تابلو، تاریخ تحویل و مرحله اولیه. |
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectSpecsScreen.kt` | صفحه مشخصات فنی ساخت تابلو | ثبت ابعاد (طول، ارتفاع، عمق)، متریال حروف، نورپردازی، منبع تغذیه (SMPS) و زیرسازی. |
 | `/app/src/main/java/com/example/ui/screens/projects/SpecEditDialog.kt` | فرم شیت افزودن مشخصه فنی | ورود اطلاعات فنی اختصاصی هر بخش تابلو با اعتبارسنجی مقادیر. |
