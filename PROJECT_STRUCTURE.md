@@ -99,6 +99,7 @@
 | `/app/src/main/java/com/example/ui/screens/settings/ProjectStagesSettingsSheet.kt` | صفحه مستقل مدیریت مراحل پروژه | مدیریت پویای مراحل سفارش با قابلیت تغییر ترتیب، نام و کد رنگی مرحله. |
 | `/app/src/main/java/com/example/ui/screens/settings/BackupRestoreSettingsSheet.kt` | صفحه مستقل پشتیبان‌گیری و بازیابی | ایجاد فایل پشتیبان رمزنگاری‌شده، بازگردانی پایگاه داده و اشتراک فایل پشتیبان. |
 | `/app/src/main/java/com/example/ui/screens/settings/DatabaseManagementSettingsSheet.kt` | صفحه مستقل مدیریت دیتابیس و نمونه | بازنشانی دیتابیس کارگاه، پاکسازی داده‌ها و بارگذاری مجدد اطلاعات نمونه کارگاهی. |
+| `/app/src/main/java/com/example/ui/screens/settings/BlurTestSettingsScreen.kt` | صفحه آزمایشی تست افکت بلور | محیط آزمایشی بررسی ساختار سه‌لایه مودال (لایه ۱ ModalBottomSheet، لایه ۲ Scrim، لایه ۳ بلور فرم زیرین). |
 | `/app/src/main/java/com/example/ui/screens/auth/LoginScreen.kt` | صفحه قفل و احراز هویت | ورود با پین‌کد اختصاصی یا حسگر اثر انگشت/تشخیص چهره بیومتریک برای امنیت اطلاعات مالی. |
 | `/app/src/main/java/com/example/ui/screens/crash/CrashReportActivity.kt` | اکتیویتی اختصاصی گزارش خطا (Crash) | نمایش جزئیات فنی کرش، امکان کپی گزارش و اشتراک‌گذاری با توسعه‌دهنده بدون بسته‌شدن ناگهانی برنامه. |
 

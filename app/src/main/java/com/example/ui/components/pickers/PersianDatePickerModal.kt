@@ -53,10 +53,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.ui.theme.MyApplicationTheme
 import com.example.util.JalaliDate
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -142,6 +144,7 @@ private data class DatePreset(val label: String, val date: JalaliDate)
 @Composable
 fun PersianDatePickerCard(
   initialDate: JalaliDate? = null,
+  initialKeyboardMode: Boolean = true,
   onDateSelected: (JalaliDate) -> Unit,
   onDismissRequest: () -> Unit,
   modifier: Modifier = Modifier
@@ -168,8 +171,10 @@ fun PersianDatePickerCard(
 
   var selectedDay by remember { mutableIntStateOf(activeInitial.day) }
 
-  // The modal now opens in manual input mode by default
-  var viewMode by remember { mutableStateOf(CalendarViewMode.KEYBOARD_INPUT) }
+  // The modal opens in specified mode (manual or days grid)
+  var viewMode by remember {
+    mutableStateOf(if (initialKeyboardMode) CalendarViewMode.KEYBOARD_INPUT else CalendarViewMode.DAYS)
+  }
 
   // Date handed to the manual input screen every time it is opened
   var manualInitial by remember { mutableStateOf(activeInitial) }
@@ -1152,3 +1157,52 @@ private fun YearsGridView(
     }
   }
 }
+
+// =============================================================================
+// پیش‌نمایش‌های دوگانه کامپوز برای کامپوننت تقویم جلالی
+// =============================================================================
+
+@Preview(name = "تقویم جلالی - ۱. حالت انتخاب دیداری از تقویم (Days Grid)", showBackground = true)
+@Composable
+fun PersianDatePickerCalendarDaysPreview() {
+  MyApplicationTheme {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        PersianDatePickerCard(
+          initialDate = JalaliDate(1403, 8, 15),
+          initialKeyboardMode = false,
+          onDateSelected = {},
+          onDismissRequest = {}
+        )
+      }
+    }
+  }
+}
+
+@Preview(name = "تقویم جلالی - ۲. حالت ورود دستی با کیبورد (Manual Input)", showBackground = true)
+@Composable
+fun PersianDatePickerManualInputPreview() {
+  MyApplicationTheme {
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(16.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        PersianDatePickerCard(
+          initialDate = JalaliDate(1403, 8, 15),
+          initialKeyboardMode = true,
+          onDateSelected = {},
+          onDismissRequest = {}
+        )
+      }
+    }
+  }
+}
+

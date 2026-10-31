@@ -43,7 +43,8 @@ enum class SettingsSubScreen {
     BACKUP_RESTORE,
     DATABASE_MANAGEMENT,
     TRASH,
-    AUDIT_LOGS
+    AUDIT_LOGS,
+    BLUR_TEST
 }
 
 @Composable
@@ -121,7 +122,8 @@ fun SettingsScreen(
                 },
                 onEditUserSecurity = { showUserDialog = true },
                 onOpenBackupRestore = { currentSubScreen = SettingsSubScreen.BACKUP_RESTORE },
-                onOpenDatabaseManagement = { currentSubScreen = SettingsSubScreen.DATABASE_MANAGEMENT }
+                onOpenDatabaseManagement = { currentSubScreen = SettingsSubScreen.DATABASE_MANAGEMENT },
+                onOpenBlurTest = { currentSubScreen = SettingsSubScreen.BLUR_TEST }
             )
         }
         SettingsSubScreen.EXPENSE_CATEGORIES -> {
@@ -202,6 +204,11 @@ fun SettingsScreen(
                 onBack = { currentSubScreen = SettingsSubScreen.MAIN }
             )
         }
+        SettingsSubScreen.BLUR_TEST -> {
+            BlurTestSettingsScreen(
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN }
+            )
+        }
     }
 
     // Contractor Info Dialog
@@ -268,7 +275,8 @@ fun SettingsContent(
     onToggleBiometric: (Boolean) -> Unit,
     onEditUserSecurity: () -> Unit,
     onOpenBackupRestore: () -> Unit,
-    onOpenDatabaseManagement: () -> Unit
+    onOpenDatabaseManagement: () -> Unit,
+    onOpenBlurTest: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -438,7 +446,61 @@ fun SettingsContent(
                 }
             }
 
-            // Section 3: Workshop Management (Categories & Stages) - Accordion / Row navigation per Agreement 1.1
+            // Section 3: Security & User Profile (PIN / Biometric) - کارت سوم طبق درخواست
+            item {
+                Text("امنیت و کنترل دسترسی", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                AppCard {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("قفل ورود به برنامه با رمز / PIN", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text("در صورت فعال‌بودن، هنگام باز شدن برنامه رمز خواسته می‌شود", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = isAuthEnabled,
+                                onCheckedChange = onTogglePin
+                            )
+                        }
+
+                        if (isAuthEnabled) {
+                            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("ورود با اثر انگشت (بیومتریک)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                    Text("استفاده از حسگر اثر انگشت گوشی برای ورود سریع", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Switch(
+                                    checked = isBiometricEnabled,
+                                    onCheckedChange = onToggleBiometric
+                                )
+                            }
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        Button(
+                            onClick = onEditUserSecurity,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().testTag("edit_security_profile_btn")
+                        ) {
+                            Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("تغییر رمز عبور و راهنمای یادآوری (Hint)")
+                        }
+                    }
+                }
+            }
+
+            // Section 4: Workshop Management (Categories & Stages) - Accordion / Row navigation per Agreement 1.1
             item {
                 Text("مدیریت کارگاه و تابلوسازی", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -505,7 +567,7 @@ fun SettingsContent(
                 }
             }
 
-            // Section 4: Trash & Activity Log
+            // Section 5: Trash & Activity Log
             item {
                 Text("سطل زباله و سابقه فعالیت‌ها", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -572,60 +634,6 @@ fun SettingsContent(
                 }
             }
 
-            // Section 5: Security & User Profile (PIN / Biometric)
-            item {
-                Text("امنیت و کنترل دسترسی", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(8.dp))
-                AppCard {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("قفل ورود به برنامه با رمز / PIN", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                                Text("در صورت فعال‌بودن، هنگام باز شدن برنامه رمز خواسته می‌شود", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Switch(
-                                checked = isAuthEnabled,
-                                onCheckedChange = onTogglePin
-                            )
-                        }
-
-                        if (isAuthEnabled) {
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("ورود با اثر انگشت (بیومتریک)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                    Text("استفاده از حسگر اثر انگشت گوشی برای ورود سریع", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Switch(
-                                    checked = isBiometricEnabled,
-                                    onCheckedChange = onToggleBiometric
-                                )
-                            }
-                        }
-
-                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                        Button(
-                            onClick = onEditUserSecurity,
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth().testTag("edit_security_profile_btn")
-                        ) {
-                            Icon(Icons.Default.Security, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("تغییر رمز عبور و راهنمای یادآوری (Hint)")
-                        }
-                    }
-                }
-            }
-
             // Section 6: Backup & Database Management - Row navigation per Agreement 1.1
             item {
                 Text("پشتیبان‌گیری و پایگاه داده", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -685,6 +693,43 @@ fun SettingsContent(
                                 Column {
                                     Text("مدیریت دیتابیس و داده‌های فرضی", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                                     Text("پاک‌سازی اطلاعات فرضی و راه‌اندازی برای کار واقعی کارگاه", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            // Section 7: Experimental / Blur Test - آیتم اضافه شده طبق درخواست کاربر
+            item {
+                Text("آزمایشگاه و جلوه‌های بصری", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                AppCard {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenBlurTest() }
+                                .padding(vertical = 4.dp)
+                                .testTag("blur_test_row_item"),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.BlurOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("تست بلور", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("بررسی افکت تاری فرم زیرین و شفافیت لایه Scrim در مودال‌ها", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -959,7 +1004,8 @@ fun SettingsScreenPreview() {
                 onToggleBiometric = {},
                 onEditUserSecurity = {},
                 onOpenBackupRestore = {},
-                onOpenDatabaseManagement = {}
+                onOpenDatabaseManagement = {},
+                onOpenBlurTest = {}
             )
         }
     }

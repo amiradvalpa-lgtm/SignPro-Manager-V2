@@ -295,13 +295,27 @@
   3. بازآرایی کارت پروژه: ساختار منظم دو سطری با تراز کارفرما زیر عنوان و تاریخ شروع زیر چیپ وضعیت، حذف منوی سه‌نقطه و اتصال به `SwipeToRevealCard`.
   4. بهینه‌سازی کارت مشتریان: حذف منوی سه‌نقطه، استقرار دکمه تماس با تاریخ خالص زیر آن، و اتصال کارت به `SwipeToRevealCard`.
 
+#### تصمیم ADR-026: بازآرایی کارت امنیت، ایجاد ماژول مستقل تست بلور (Glassmorphism) و پیش‌نمایش دوگانه تقویم جلالی
+- **وضعیت:** تصویب شده
+- **مسئله:**
+  1. در صفحه تنظیمات (`SettingsScreen.kt`)، کارت امنیت و کنترل دسترسی در ردیف پنجم قرار داشت که نیازمند اولویت‌دهی و انتقال به جایگاه سوم (پس از کارت واحد پول و ظاهر برنامه) بود.
+  2. نیاز به آزمایش و مقایسه جلوه بصری شیشه‌ای و تار (Glassmorphism) برای لایه Scrim مودال‌ها به جای لایه تیره یکنواخت؛ با الزام ایجاد ماژول کاملاً مستقل در یک فایل جداگانه در تنظیمات تا در صورت عدم رضایت کاربر با کمترین تغییر حذف شود و در صورت تأیید به کل مودال‌ها تعمیم یابد.
+  3. ساختار سه لایه‌ای مورد نیاز: لایه ۱ (خود ModalBottomSheet بدون تغییر)، لایه ۲ (لایه Scrim نیمه‌شفاف)، و لایه ۳ (فرم زیرین با اعمال افکت Modifier.blur) همراه با کنترل‌های اسلایدر تنظیم تاری و شفافیت در داخل مودال.
+  4. در کامپوننت تقویم جلالی (`PersianDatePickerModal.kt`)، دو حالت متمایز وجود دارد (حالت انتخاب از جدول روزها و ماه‌ها، و حالت ورود دستی با کیبورد)، اما هیچ پیش‌نمایش کامپوزی (@Preview) برای بازبینی و تست ظاهر آنها بدون اجرای برنامه تعریف نشده بود.
+- **تصمیم:**
+  1. انتقال کارت «امنیت و کنترل دسترسی» به جایگاه سوم در `SettingsContent` بلافاصله پس از کارت ظاهر و واحد پول و قبل از کارت‌های مدیریت کارگاه، سطل زباله و دیتابیس.
+  2. ایجاد صفحه تمام‌صفحه ماژولار `BlurTestSettingsScreen.kt` در پکیج `com.example.ui.screens.settings` شامل فرم زیرین با انواع کنترل‌های ورودی (متن، تاگل سوییچ، کارت خلاصه مالی) که با انیمیشن `animatedBlurRadius` هنگام باز شدن مودال تار می‌شود؛ لایه ۲ با کنترل داینامیک `scrimColor = Color.Black.copy(alpha = scrimAlpha)`؛ و لایه ۱ حاوی اسلایدرهای تنظیم شعاع تاری (۰ تا ۳۰ دی‌پی)، میزان تیرگی Scrim (۵٪ تا ۸۵٪) و پیش‌تنظیم‌های سریع («متریال عادی»، «شیشه‌ای استاندارد»، «تار عمیق»).
+  3. افزودن پارامتر `initialKeyboardMode: Boolean = true` به `PersianDatePickerCard` و پیاده‌سازی دو تابع `@Preview` مستقل با تم و جهت‌بندی RTL:
+     - `PersianDatePickerCalendarDaysPreview`: پیش‌نمایش حالت تقویم دیداری و جدول روزها و ماه‌ها.
+     - `PersianDatePickerManualInputPreview`: پیش‌نمایش حالت ورود دستی تاریخ با ارقام و دکمه‌های میانبر («امروز»، «فردا»، «هفته بعد» و «ماه بعد»).
+
 ---
 
 ### ۳. ساختار پکیج‌ها و وظایف
 - `com.example.AlpaApplication`: نقطه ورود و لایه ثبت خطای سراسری اپلیکیشن.
 - `com.example.MainActivity`: اکتیویتی اصلی برنامه میزبان کامپوز و سیستم بارها.
 - `com.example.ui.screens.crash.CrashReportActivity`: صفحه اختصاصی نمایش و اشتراک‌گذاری کرش در صورت بروز خطای ناشناخته.
-- `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`).
+- `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`، `BlurTestSettingsScreen`).
 - `com.example.ui.screens.projects`: صفحه پروژه‌ها (`ProjectsScreen`)، جزئیات پروژه (`ProjectDetailScreen`)، مودال تاگل مراحل (`ProjectStagesToggleSheet`)، ماشین کمکی وضعیت (`ProjectStatusHelper`)، دیالوگ ویرایش، مشخصات و فاکتور پروژه.
 - `com.example.ui.screens.dashboard`: صفحه داشبورد اصلی برنامه (`DashboardScreen`) شامل دکمه‌های دسترسی سریع، کارت‌های دو ستونه مالی و کارگاهی و پیش‌نمایش‌های جامع.
 - `com.example.data.local`: انتیتی‌ها، دیتابیس Room و نمونه داده‌های اولیه تابلوسازی.
