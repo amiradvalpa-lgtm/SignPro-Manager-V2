@@ -61,10 +61,18 @@ fun FinanceScreen(
     var showCheckDialog by remember { mutableStateOf(false) }
     var selectedCheckForEdit by remember { mutableStateOf<CheckEntity?>(null) }
     var checkToDelete by remember { mutableStateOf<CheckEntity?>(null) }
+    var checkToClear by remember { mutableStateOf<CheckEntity?>(null) }
+    var checkToBounce by remember { mutableStateOf<CheckEntity?>(null) }
 
     var showExpenseDialog by remember { mutableStateOf(false) }
     var selectedExpenseForEdit by remember { mutableStateOf<ExpenseEntity?>(null) }
     var expenseToDelete by remember { mutableStateOf<ExpenseEntity?>(null) }
+
+    // Swipe to reveal single active card tracking per tab
+    var openedReceiptId by remember { mutableStateOf<String?>(null) }
+    var openedPaymentId by remember { mutableStateOf<String?>(null) }
+    var openedCheckId by remember { mutableStateOf<String?>(null) }
+    var openedExpenseId by remember { mutableStateOf<String?>(null) }
 
     val fabColor = when (selectedTabIndex) {
         0 -> MoneyPositive
@@ -197,43 +205,44 @@ fun FinanceScreen(
                         } else {
                             items(receipts, key = { it.id }) { pay ->
                                 val customer = customers.firstOrNull { it.id == pay.customerId }
-                                AppCard {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        // Top Row: Customer Name on right (Start), 3-Dots Menu on left (End)
+                                SwipeToRevealCard(
+                                    isRevealed = (openedReceiptId == pay.id),
+                                    onExpanded = { openedReceiptId = pay.id },
+                                    onCollapsed = { if (openedReceiptId == pay.id) openedReceiptId = null },
+                                    onEdit = {
+                                        openedReceiptId = null
+                                        paymentDialogType = "RECEIPT"
+                                        selectedPaymentForEdit = pay
+                                    },
+                                    onDelete = {
+                                        openedReceiptId = null
+                                        paymentToDelete = pay
+                                    },
+                                    modifier = Modifier.testTag("receipt_item_${pay.id}")
+                                ) {
+                                    AppCard {
                                         Row(
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(14.dp),
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = customer?.name ?: "نامشخص",
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyPositive,
+                                            // Right Column (Start in RTL): Customer Name on line 1, Method on line 2
+                                            Column(
                                                 modifier = Modifier
                                                     .weight(1f)
                                                     .padding(end = 8.dp)
-                                            )
-                                            CardOverflowMenu(
-                                                onEdit = {
-                                                    paymentDialogType = "RECEIPT"
-                                                    selectedPaymentForEdit = pay
-                                                },
-                                                onDelete = { paymentToDelete = pay }
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-
-                                        // Bottom Row: Date & Method on right (Start), Amount on left (End)
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
+                                            ) {
                                                 Text(
-                                                    text = "تاریخ: ${pay.date} • روش: ${pay.method}",
+                                                    text = customer?.name ?: "نامشخص",
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "روش: ${pay.method}",
                                                     style = MaterialTheme.typography.bodySmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -247,12 +256,21 @@ fun FinanceScreen(
                                                 }
                                             }
 
-                                            Text(
-                                                text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
-                                                style = MaterialTheme.typography.titleSmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyPositive
-                                            )
+                                            // Left Column (End in RTL): Amount on line 1, Date on line 2
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
+                                                    style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MoneyPositive
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = pay.date,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -315,59 +333,54 @@ fun FinanceScreen(
                                     modifier = Modifier.testTag("payment_item_${pay.id}")
                                 ) {
                                     AppCard {
-                                        Column(modifier = Modifier.padding(14.dp)) {
-                                            // Top Row: Customer Name on right (Start), Amount on left (End)
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(14.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Right Column (Start in RTL): Customer Name on line 1, Method on line 2
+                                            Column(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 8.dp)
                                             ) {
                                                 Text(
                                                     text = customer?.name ?: "نامشخص",
                                                     style = MaterialTheme.typography.titleSmall,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = MoneyNegative,
-                                                    modifier = Modifier
-                                                        .weight(1f)
-                                                        .padding(end = 8.dp)
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "روش: ${pay.method}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                if (pay.description.isNotEmpty()) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "توضیح: ${pay.description}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
 
+                                            // Left Column (End in RTL): Amount on line 1, Date on line 2
+                                            Column(horizontalAlignment = Alignment.End) {
                                                 Text(
                                                     text = FormatUtils.formatCurrency(pay.amount, currencyUnit),
                                                     style = MaterialTheme.typography.titleSmall,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MoneyNegative
                                                 )
-                                            }
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-
-                                            // Bottom Row: Date & Method on right (Start), Swipe hint on left (End)
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(
-                                                        text = "تاریخ: ${pay.date} • روش: ${pay.method}",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                    if (pay.description.isNotEmpty()) {
-                                                        Spacer(modifier = Modifier.height(2.dp))
-                                                        Text(
-                                                            text = "توضیح: ${pay.description}",
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                        )
-                                                    }
-                                                }
-
+                                                Spacer(modifier = Modifier.height(4.dp))
                                                 Text(
-                                                    text = "برای عملیات بکشید",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                                    text = pay.date,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                             }
                                         }
@@ -411,20 +424,55 @@ fun FinanceScreen(
                             items(filteredChecks, key = { it.id }) { chk ->
                                 val customer = customers.firstOrNull { it.id == chk.customerId }
                                 val isOverdue = chk.status == "PENDING" && chk.dueDate <= todayStr
-                                AppCard(
-                                    borderColor = if (isOverdue) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                SwipeToRevealCard(
+                                    isRevealed = (openedCheckId == chk.id),
+                                    onExpanded = { openedCheckId = chk.id },
+                                    onCollapsed = { if (openedCheckId == chk.id) openedCheckId = null },
+                                    onEdit = {
+                                        openedCheckId = null
+                                        selectedCheckForEdit = chk
+                                    },
+                                    onDelete = {
+                                        openedCheckId = null
+                                        checkToDelete = chk
+                                    },
+                                    modifier = Modifier.testTag("check_item_${chk.id}")
                                 ) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
+                                    AppCard(
+                                        borderColor = if (isOverdue) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    ) {
+                                        Column(modifier = Modifier.padding(14.dp)) {
+                                            // Row 1: Check Bank on right, Amount on left
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 Text(
-                                                    text = "چک ${chk.bankName} - مشتری: ${customer?.name ?: "نامشخص"}",
+                                                    text = "چک ${chk.bankName}",
                                                     style = MaterialTheme.typography.titleSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(chk.amount, currencyUnit),
+                                                    style = MaterialTheme.typography.titleMedium,
                                                     fontWeight = FontWeight.Bold
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            // Row 2: Customer Name on right (size bodySmall matching dueDate), Due Date on left
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "مشتری: ${customer?.name ?: "نامشخص"}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
                                                 Text(
                                                     text = "سررسید: ${chk.dueDate} ${if (isOverdue) "(سررسید شده!)" else ""}",
@@ -432,18 +480,21 @@ fun FinanceScreen(
                                                     fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal,
                                                     color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
-                                                if (chk.sayadNumber.isNotEmpty()) {
-                                                    Text("شناسه صیاد: ${chk.sayadNumber}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                }
                                             }
 
-                                            Column(horizontalAlignment = Alignment.End) {
+                                            Spacer(modifier = Modifier.height(6.dp))
+
+                                            // Row 3: Sayad Number on right, Status Badge on left
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 Text(
-                                                    text = FormatUtils.formatCurrency(chk.amount, currencyUnit),
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold
+                                                    text = if (chk.sayadNumber.isNotEmpty()) "شناسه صیاد: ${chk.sayadNumber}" else "",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
-                                                Spacer(modifier = Modifier.height(4.dp))
                                                 StatusBadge(
                                                     status = when (chk.status) {
                                                         "CLEARED" -> "وصول شده"
@@ -453,34 +504,25 @@ fun FinanceScreen(
                                                     }
                                                 )
                                             }
-                                        }
 
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.End
-                                        ) {
+                                            // Row 4: Pending action buttons (Clear & Bounce) with confirmation
                                             if (chk.status == "PENDING") {
-                                                TextButton(onClick = {
-                                                    viewModel.saveCheck(chk.copy(status = "CLEARED"), isNew = false) {}
-                                                }) {
-                                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MoneyPositive, modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("ثبت وصول", color = MoneyPositive)
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.End
+                                                ) {
+                                                    TextButton(onClick = { checkToClear = chk }) {
+                                                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MoneyPositive, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("ثبت وصول", color = MoneyPositive)
+                                                    }
+                                                    TextButton(onClick = { checkToBounce = chk }) {
+                                                        Icon(Icons.Default.Cancel, contentDescription = null, tint = MoneyNegative, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("برگشت", color = MoneyNegative)
+                                                    }
                                                 }
-                                                TextButton(onClick = {
-                                                    viewModel.saveCheck(chk.copy(status = "BOUNCED"), isNew = false) {}
-                                                }) {
-                                                    Icon(Icons.Default.Cancel, contentDescription = null, tint = MoneyNegative, modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("برگشت", color = MoneyNegative)
-                                                }
-                                            }
-                                            IconButton(onClick = { selectedCheckForEdit = chk }) {
-                                                Icon(Icons.Default.Edit, contentDescription = "ویرایش", tint = MaterialTheme.colorScheme.primary)
-                                            }
-                                            IconButton(onClick = { checkToDelete = chk }) {
-                                                Icon(Icons.Default.DeleteOutline, contentDescription = "حذف", tint = MaterialTheme.colorScheme.error)
                                             }
                                         }
                                     }
@@ -518,36 +560,59 @@ fun FinanceScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(filteredExpenses, key = { it.id }) { exp ->
-                                AppCard {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(exp.category, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                                            Text("تاریخ: ${exp.date}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            if (exp.description.isNotEmpty()) {
-                                                Text("توضیح: ${exp.description}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                SwipeToRevealCard(
+                                    isRevealed = (openedExpenseId == exp.id),
+                                    onExpanded = { openedExpenseId = exp.id },
+                                    onCollapsed = { if (openedExpenseId == exp.id) openedExpenseId = null },
+                                    onEdit = {
+                                        openedExpenseId = null
+                                        selectedExpenseForEdit = exp
+                                    },
+                                    onDelete = {
+                                        openedExpenseId = null
+                                        expenseToDelete = exp
+                                    },
+                                    modifier = Modifier.testTag("expense_item_${exp.id}")
+                                ) {
+                                    AppCard {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(14.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            // Right Column (Start in RTL): Category on line 1, Description on line 2
+                                            Column(
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .padding(end = 8.dp)
+                                            ) {
+                                                Text(exp.category, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                                if (exp.description.isNotEmpty()) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
+                                                    Text(
+                                                        text = "توضیح: ${exp.description}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
                                             }
-                                        }
 
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = FormatUtils.formatCurrency(exp.amount, currencyUnit),
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MoneyNegative
-                                            )
-                                            Row {
-                                                IconButton(onClick = { selectedExpenseForEdit = exp }) {
-                                                    Icon(Icons.Default.Edit, contentDescription = "ویرایش", tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                                IconButton(onClick = { expenseToDelete = exp }) {
-                                                    Icon(Icons.Default.DeleteOutline, contentDescription = "حذف", tint = MaterialTheme.colorScheme.error)
-                                                }
+                                            // Left Column (End in RTL): Amount on line 1, Date on line 2
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(exp.amount, currencyUnit),
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MoneyNegative
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "تاریخ: ${exp.date}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
                                         }
                                     }
@@ -694,6 +759,68 @@ fun FinanceScreen(
         onDismiss = { checkToDelete = null }
     )
 
+    if (checkToClear != null) {
+        val chk = checkToClear!!
+        val customer = customers.firstOrNull { it.id == chk.customerId }
+        AlertDialog(
+            onDismissRequest = { checkToClear = null },
+            icon = { Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MoneyPositive) },
+            title = { Text("تأیید ثبت وصول چک", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "آیا از ثبت وصول چک بانک ${chk.bankName} به مبلغ ${FormatUtils.formatCurrency(chk.amount, currencyUnit)} مربوط به مشتری «${customer?.name ?: "نامشخص"}» اطمینان دارید؟"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.saveCheck(chk.copy(status = "CLEARED"), isNew = false) {}
+                        checkToClear = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MoneyPositive)
+                ) {
+                    Text("بله، ثبت وصول شود", color = androidx.compose.ui.graphics.Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { checkToClear = null }) {
+                    Text("انصراف")
+                }
+            }
+        )
+    }
+
+    if (checkToBounce != null) {
+        val chk = checkToBounce!!
+        val customer = customers.firstOrNull { it.id == chk.customerId }
+        AlertDialog(
+            onDismissRequest = { checkToBounce = null },
+            icon = { Icon(Icons.Default.Cancel, contentDescription = null, tint = MoneyNegative) },
+            title = { Text("تأیید برگشت چک", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "آیا از ثبت برگشت خوردن چک بانک ${chk.bankName} به مبلغ ${FormatUtils.formatCurrency(chk.amount, currencyUnit)} مربوط به مشتری «${customer?.name ?: "نامشخص"}» اطمینان دارید؟"
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.saveCheck(chk.copy(status = "BOUNCED"), isNew = false) {}
+                        checkToBounce = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MoneyNegative)
+                ) {
+                    Text("بله، برگشت ثبت شود", color = androidx.compose.ui.graphics.Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { checkToBounce = null }) {
+                    Text("انصراف")
+                }
+            }
+        )
+    }
+
     // Expense Dialogs
     if (showExpenseDialog) {
         ExpenseEditDialog(
@@ -781,12 +908,12 @@ private fun DetailItem(
 }
 
 @androidx.compose.ui.tooling.preview.Preview(
-    name = "Finance Screen Preview",
+    name = "Finance Screen - Receipts Tab",
     showBackground = true,
     device = "spec:width=411dp,height=891dp"
 )
 @Composable
-fun FinanceScreenPreview() {
+fun FinanceReceiptsTabPreview() {
     com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
         androidx.compose.runtime.CompositionLocalProvider(
             androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
@@ -838,20 +965,12 @@ fun FinanceScreenPreview() {
                             }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            Button(
-                                onClick = {},
-                                colors = ButtonDefaults.buttonColors(containerColor = MoneyPositive),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(52.dp)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("دریافت از مشتری", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
                             AppCard {
                                 Row(
                                     modifier = Modifier
@@ -860,26 +979,391 @@ fun FinanceScreenPreview() {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                                         Text(
-                                            text = "دریافت از: مهندس علیرضا رضایی",
-                                            style = MaterialTheme.typography.titleMedium,
+                                            text = "مهندس علیرضا رضایی",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "روش: کارت به کارت",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "۱۵,۰۰۰,۰۰۰ تومان",
+                                            style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MoneyPositive
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = "تاریخ: ۱۴۰۳/۰۸/۱۲ • روش: کارت به کارت • پیگیری: ۹۸۷۶۵۴",
+                                            text = "۱۴۰۳/۰۸/۱۲",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
-                                    Text(
-                                        text = FormatUtils.formatCurrency(15000000L, "TOMAN"),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MoneyPositive
-                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Finance Screen - Payments Tab",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun FinancePaymentsTabPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = {
+                        AppTopBar(title = "امور مالی و حسابداری")
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(
+                            onClick = {},
+                            containerColor = MoneyNegative,
+                            contentColor = androidx.compose.ui.graphics.Color.White,
+                            shape = RoundedCornerShape(18.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "افزودن سند مالی")
+                        }
+                    }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        ScrollableTabRow(
+                            selectedTabIndex = 1,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی").forEachIndexed { index, title ->
+                                Tab(
+                                    selected = index == 1,
+                                    onClick = {},
+                                    text = { Text(title, fontWeight = FontWeight.Bold) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AppCard {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                        Text(
+                                            text = "شرکت پترو شیمی پارس",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "روش: پایا / ساتنا",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "۳,۵۰۰,۰۰۰ تومان",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MoneyNegative
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "۱۴۰۳/۰۸/۱۵",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Finance Screen - Checks Tab",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun FinanceChecksTabPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = { AppTopBar(title = "امور مالی و حسابداری") }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        ScrollableTabRow(
+                            selectedTabIndex = 2,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی").forEachIndexed { index, title ->
+                                Tab(
+                                    selected = index == 2,
+                                    onClick = {},
+                                    text = { Text(title, fontWeight = FontWeight.Bold) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AppCard {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "چک بانک صادرات",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "۲۵,۰۰۰,۰۰۰ تومان",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "مشتری: حاج کاظم صادقی",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = "سررسید: ۱۴۰۳/۰۹/۰۱",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "شناسه صیاد: ۱۲۳۴۵۶۷۸۹۰۱۲۳۴۵۶",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        StatusBadge(status = "در جریان وصول")
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        TextButton(onClick = {}) {
+                                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MoneyPositive, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("ثبت وصول", color = MoneyPositive)
+                                        }
+                                        TextButton(onClick = {}) {
+                                            Icon(Icons.Default.Cancel, contentDescription = null, tint = MoneyNegative, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("برگشت", color = MoneyNegative)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Finance Screen - Expenses Tab",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun FinanceExpensesTabPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = { AppTopBar(title = "امور مالی و حسابداری") }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        ScrollableTabRow(
+                            selectedTabIndex = 3,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی").forEachIndexed { index, title ->
+                                Tab(
+                                    selected = index == 3,
+                                    onClick = {},
+                                    text = { Text(title, fontWeight = FontWeight.Bold) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AppCard {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                        Text("خرید ورق چلنیوم طلایی", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "توضیح: ۵ رول ورق ۲.۵ سانت برند آلومکس",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "۸,۴۰۰,۰۰۰ تومان",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MoneyNegative
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "تاریخ: ۱۴۰۳/۰۸/۱۰",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(
+    name = "Finance Screen - Report Tab",
+    showBackground = true,
+    device = "spec:width=411dp,height=891dp"
+)
+@Composable
+fun FinanceReportTabPreview() {
+    com.example.ui.theme.MyApplicationTheme(themeMode = "LIGHT") {
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl
+        ) {
+            Surface(color = MaterialTheme.colorScheme.background) {
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    topBar = { AppTopBar(title = "امور مالی و حسابداری") }
+                ) { padding ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        ScrollableTabRow(
+                            selectedTabIndex = 4,
+                            edgePadding = 16.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            listOf("دریافت از مشتری", "پرداخت به مشتری", "چک‌ها", "هزینه‌های کارگاه", "گزارش مالی").forEachIndexed { index, title ->
+                                Tab(
+                                    selected = index == 4,
+                                    onClick = {},
+                                    text = { Text(title, fontWeight = FontWeight.Bold) }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AppCard {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text("خلاصه عملکرد مالی و سود کارگاه", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    DetailItem("کل صورت‌حساب‌ها:", "۸۵,۰۰۰,۰۰۰ تومان")
+                                    DetailItem("کل دریافتی‌های نقدی:", "۵۲,۰۰۰,۰۰۰ تومان", MoneyPositive)
+                                    DetailItem("کل هزینه‌های کارگاه:", "۲۱,۰۰۰,۰۰۰ تومان", MoneyNegative)
+                                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                                    DetailItem("سود ناخالص عملیاتی:", "+ ۳۱,۰۰۰,۰۰۰ تومان", MoneyPositive, isBold = true)
                                 }
                             }
                         }

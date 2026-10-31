@@ -39,6 +39,7 @@ fun ProjectsScreen(
     var selectedProjectForEdit by remember { mutableStateOf<ProjectEntity?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var projectToDelete by remember { mutableStateOf<ProjectEntity?>(null) }
+    var openedProjectId by remember { mutableStateOf<String?>(null) }
 
     val filterOptions = remember(stages) {
         val sortedStages = stages.sortedBy { it.displayOrder }
@@ -153,9 +154,18 @@ fun ProjectsScreen(
                             project = project,
                             customerName = customer?.name ?: "مشتری نامشخص",
                             chipDisplay = chipDisplay,
+                            isRevealed = (openedProjectId == project.id),
+                            onExpanded = { openedProjectId = project.id },
+                            onCollapsed = { if (openedProjectId == project.id) openedProjectId = null },
                             onClick = { onNavigateToProjectDetail(project.id) },
-                            onEdit = { selectedProjectForEdit = project },
-                            onDelete = { projectToDelete = project }
+                            onEdit = {
+                                openedProjectId = null
+                                selectedProjectForEdit = project
+                            },
+                            onDelete = {
+                                openedProjectId = null
+                                projectToDelete = project
+                            }
                         )
                     }
                 }
@@ -212,37 +222,41 @@ fun ProjectListItem(
     project: ProjectEntity,
     customerName: String,
     chipDisplay: ProjectChipDisplay,
+    isRevealed: Boolean = false,
+    onExpanded: (() -> Unit)? = null,
+    onCollapsed: (() -> Unit)? = null,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
-
-    AppCard(
-        onClick = onClick,
+    SwipeToRevealCard(
+        isRevealed = isRevealed,
+        onExpanded = onExpanded,
+        onCollapsed = onCollapsed,
+        onEdit = onEdit,
+        onDelete = onDelete,
         modifier = Modifier.testTag("project_item_${project.id}")
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            // Header Row: Title on right, Status Chip + 3-Dots Menu on left
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = project.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                )
-
+        AppCard(
+            onClick = onClick
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                // Header Row: Title on right (Start), Status Chip on left (End)
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Text(
+                        text = project.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
+
                     val defaultPrimaryColor = MaterialTheme.colorScheme.primary
                     val chipColor = remember(chipDisplay.colorHex, defaultPrimaryColor) {
                         try {
@@ -268,98 +282,33 @@ fun ProjectListItem(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
+                }
 
-                    // 3-Dots Overflow Menu without background
-                    Box {
-                        IconButton(
-                            onClick = { menuExpanded = true },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "عملیات پروژه",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("ویرایش پروژه") },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onEdit()
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "حذف پروژه",
-                                        color = MaterialTheme.colorScheme.error
-                                    )
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onDelete()
-                                }
-                            )
-                        }
-                    }
+                // Metadata Row: Customer on right (under title), Start Date on left (under status chip)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "کارفرما: $customerName",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
+
+                    Text(
+                        text = "تاریخ شروع: ${project.startDate}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Two-column aligned metadata rows (Customer and Start Date)
-            ProjectDetailRow(label = "کارفرما:", value = customerName)
-            Spacer(modifier = Modifier.height(4.dp))
-            ProjectDetailRow(label = "تاریخ شروع:", value = project.startDate)
         }
-    }
-}
-
-@Composable
-fun ProjectDetailRow(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.Top
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(72.dp)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 

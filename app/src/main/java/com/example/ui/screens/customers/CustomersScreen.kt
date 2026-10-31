@@ -40,6 +40,7 @@ import com.example.ui.components.common.AppSearchBar
 import com.example.ui.components.common.AppTopBar
 import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.components.common.EmptyStateView
+import com.example.ui.components.common.SwipeToRevealCard
 import com.example.ui.theme.MoneyNegative
 import com.example.ui.theme.MoneyPositive
 import com.example.ui.viewmodels.SignageViewModel
@@ -75,6 +76,7 @@ fun CustomersScreen(
     var selectedCustomerForEdit by remember { mutableStateOf<CustomerEntity?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var customerToDelete by remember { mutableStateOf<CustomerEntity?>(null) }
+    var openedCustomerId by remember { mutableStateOf<String?>(null) }
 
     // Call Log Permission & Lookup State
     var hasCallLogPermission by remember {
@@ -263,10 +265,19 @@ fun CustomersScreen(
                             onRequestCallLogPermission = {
                                 callLogPermissionLauncher.launch(Manifest.permission.READ_CALL_LOG)
                             },
+                            isRevealed = (openedCustomerId == customer.id),
+                            onExpanded = { openedCustomerId = customer.id },
+                            onCollapsed = { if (openedCustomerId == customer.id) openedCustomerId = null },
                             onClick = { onNavigateToCustomerDetail(customer.id) },
                             onCall = { dialCustomerPhone(context, customer.phone) },
-                            onEdit = { selectedCustomerForEdit = customer },
-                            onDelete = { customerToDelete = customer }
+                            onEdit = {
+                                openedCustomerId = null
+                                selectedCustomerForEdit = customer
+                            },
+                            onDelete = {
+                                openedCustomerId = null
+                                customerToDelete = customer
+                            }
                         )
                     }
                 }
@@ -539,117 +550,121 @@ private fun CustomerCard(
     lastCallDate: String?,
     hasCallLogPermission: Boolean,
     onRequestCallLogPermission: () -> Unit,
+    isRevealed: Boolean = false,
+    onExpanded: (() -> Unit)? = null,
+    onCollapsed: (() -> Unit)? = null,
     onClick: () -> Unit,
     onCall: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
-
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+    SwipeToRevealCard(
+        isRevealed = isRevealed,
+        onExpanded = onExpanded,
+        onCollapsed = onCollapsed,
+        onEdit = onEdit,
+        onDelete = onDelete,
         modifier = Modifier
             .fillMaxWidth()
             .testTag("customer_item_${customer.id}")
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Card(
+            onClick = onClick,
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // 1. Right in RTL: Avatar
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = CircleShape,
-                modifier = Modifier.size(44.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
+                // 1. Right in RTL: Avatar
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // 2. Center Info: Name + Financial status (Start-aligned for Persian RTL)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = customer.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                }
-            }
 
-            Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-            // 2. Center Info: Name + Financial status (Start-aligned for Persian RTL)
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = customer.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Financial Status Line
-                if (balance > 0) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.ErrorOutline,
-                            contentDescription = null,
-                            tint = MoneyNegative,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = "بدهکار: ${FormatUtils.formatCurrency(balance, currencyUnit)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MoneyNegative
-                        )
-                    }
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.CheckCircle,
-                            contentDescription = null,
-                            tint = MoneyPositive,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Text(
-                            text = "تسویه‌شده کامل",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MoneyPositive
-                        )
+                    // Financial Status Line
+                    if (balance > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.ErrorOutline,
+                                contentDescription = null,
+                                tint = MoneyNegative,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "بدهکار: ${FormatUtils.formatCurrency(balance, currencyUnit)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MoneyNegative
+                            )
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CheckCircle,
+                                contentDescription = null,
+                                tint = MoneyPositive,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "تسویه‌شده کامل",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MoneyPositive
+                            )
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(10.dp))
 
-            // 3. Left in RTL: Action Buttons (Call + Menu) with Last Call Date underneath
-            val isInspection = androidx.compose.ui.platform.LocalInspectionMode.current
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // 3. Left in RTL: Action Button (Call) with Last Call Date underneath
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     // Call Button
                     Surface(
@@ -670,97 +685,22 @@ private fun CustomerCard(
                         }
                     }
 
-                    // More / Menu Button
-                    Box {
-                        Surface(
-                            onClick = { menuExpanded = true },
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                            modifier = Modifier
-                                .size(38.dp)
-                                .testTag("customer_menu_btn_${customer.id}")
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "عملیات",
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(19.dp)
-                                )
-                            }
-                        }
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                        if (!isInspection) {
-                            DropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false },
-                                shape = RoundedCornerShape(14.dp),
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ) {
-                                DropdownMenuItem(
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Edit,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            "ویرایش مشتری",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onEdit()
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Delete,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            "حذف مشتری",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.error
-                                        )
-                                    },
-                                    onClick = {
-                                        menuExpanded = false
-                                        onDelete()
-                                    }
-                                )
-                            }
-                        }
+                    // Last Contact Date Line (pure date without "تماس: ")
+                    val callInfoText = when {
+                        lastCallDate != null -> lastCallDate
+                        !hasCallLogPermission -> "بدون دسترسی"
+                        else -> "ثبت نشده"
                     }
+                    Text(
+                        text = callInfoText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Last Contact Date Line transferred to under the action icons
-                val callInfoText = when {
-                    lastCallDate != null -> "تماس: $lastCallDate"
-                    !hasCallLogPermission -> "بدون دسترسی"
-                    else -> "ثبت نشده"
-                }
-                Text(
-                    text = callInfoText,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }

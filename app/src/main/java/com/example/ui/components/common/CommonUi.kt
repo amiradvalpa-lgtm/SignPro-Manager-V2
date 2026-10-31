@@ -341,6 +341,7 @@ fun SwipeToRevealCard(
     onCollapsed: (() -> Unit)? = null,
     editContentDescription: String = "ویرایش",
     deleteContentDescription: String = "حذف",
+    customRightSwipeActions: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     val density = LocalDensity.current
@@ -376,7 +377,7 @@ fun SwipeToRevealCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Actions when card moves (available on both ends for intuitive RTL/LTR drag)
+            // Revealed on swiping towards LEFT of the screen (Start side in RTL layout)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -390,8 +391,8 @@ fun SwipeToRevealCard(
                         onEdit()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        containerColor = Color(0xFFFFC107),
+                        contentColor = Color(0xFF3A3A3A)
                     ),
                     modifier = Modifier.size(44.dp)
                 ) {
@@ -411,8 +412,8 @@ fun SwipeToRevealCard(
                         onDelete()
                     },
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        containerColor = Color(0xFFF44336),
+                        contentColor = Color(0xFFFFFFFF)
                     ),
                     modifier = Modifier.size(44.dp)
                 ) {
@@ -424,52 +425,29 @@ fun SwipeToRevealCard(
                 }
             }
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                FilledIconButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            offsetX.animateTo(0f)
-                            onCollapsed?.invoke()
-                        }
-                        onEdit()
-                    },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    modifier = Modifier.size(44.dp)
+            // Future extensibility: Revealed on swiping towards RIGHT of the screen (End side in RTL layout)
+            if (customRightSwipeActions != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = editContentDescription,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    customRightSwipeActions()
                 }
-
-                FilledIconButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            offsetX.animateTo(0f)
-                            onCollapsed?.invoke()
-                        }
-                        onDelete()
-                    },
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    modifier = Modifier.size(44.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = deleteContentDescription,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            } else {
+                Spacer(modifier = Modifier.width(1.dp))
             }
+        }
+
+        // Allow dragging right only if customRightSwipeActions is present
+        val minOffset = if (layoutDirection == LayoutDirection.Rtl) {
+            if (customRightSwipeActions != null) -maxRevealPx else 0f
+        } else {
+            -maxRevealPx
+        }
+        val maxOffset = if (layoutDirection == LayoutDirection.Rtl) {
+            maxRevealPx
+        } else {
+            if (customRightSwipeActions != null) maxRevealPx else 0f
         }
 
         // Foreground Card Layer
@@ -477,7 +455,7 @@ fun SwipeToRevealCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .pointerInput(Unit) {
+                .pointerInput(minOffset, maxOffset) {
                     detectHorizontalDragGestures(
                         onHorizontalDrag = { change, dragAmount ->
                             change.consume()
@@ -485,7 +463,7 @@ fun SwipeToRevealCard(
                             // moves towards End (Left in RTL). Reversing raw dragAmount in RTL makes the card move
                             // exactly 1:1 in the direction the user moves their finger.
                             val dragDelta = if (layoutDirection == LayoutDirection.Rtl) -dragAmount else dragAmount
-                            val newOffset = (offsetX.value + dragDelta).coerceIn(-maxRevealPx, maxRevealPx)
+                            val newOffset = (offsetX.value + dragDelta).coerceIn(minOffset, maxOffset)
                             coroutineScope.launch {
                                 offsetX.snapTo(newOffset)
                             }
@@ -494,8 +472,8 @@ fun SwipeToRevealCard(
                             coroutineScope.launch {
                                 val current = offsetX.value
                                 val target = when {
-                                    current > maxRevealPx * 0.35f -> maxRevealPx
-                                    current < -maxRevealPx * 0.35f -> -maxRevealPx
+                                    current > maxRevealPx * 0.35f && maxOffset > 0f -> maxOffset
+                                    current < -maxRevealPx * 0.35f && minOffset < 0f -> minOffset
                                     else -> 0f
                                 }
                                 if (target != 0f) {
