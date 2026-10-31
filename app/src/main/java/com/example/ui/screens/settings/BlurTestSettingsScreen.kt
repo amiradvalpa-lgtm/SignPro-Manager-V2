@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -335,20 +336,21 @@ fun BlurTestSettingsScreen(
             scrimColor = Color.Black.copy(alpha = scrimAlpha.coerceIn(0f, 1f)),
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-            dragHandle = { BottomSheetDefaults.DragHandle() },
-            modifier = Modifier.fillMaxHeight(0.50f) // ارتفاع حداکثر نصف ارتفاع گوشی
+            dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // هدر فشرده مودال
-                Row(
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val maxSheetHeight = maxHeight * 0.50f
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxSheetHeight)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // هدر فشرده مودال
+                    Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -596,12 +598,7 @@ fun BlurTestSettingsScreen(
         }
     }
 }
-
-// تابع کمکی مقیاس‌دهی سوییچ‌ها
-@Composable
-private fun Modifier.scale(scale: Float): Modifier = this.then(
-    Modifier.size((scale * 51).dp, (scale * 31).dp)
-)
+}
 
 @Preview(name = "صفحه تست بلور - حالت فرم عادی", showBackground = true, widthDp = 411, heightDp = 891)
 @Composable
