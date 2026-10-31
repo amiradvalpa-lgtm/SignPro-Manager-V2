@@ -32,11 +32,11 @@ import com.example.ui.components.common.AppTopBar
 import com.example.ui.theme.MyApplicationTheme
 
 /**
- * صفحه آزمایشی مستقل جهت بررسی و مقایسه جلوه بلور (Blur) روی فرم زیرین و تنظیم تاری Scrim.
- * ساختار سه‌لایه‌ای:
+ * صفحه آزمایشی مستقل جهت بررسی و مقایسه جلوه بلور (Blur) روی بخش‌های مختلف فرم زیرین و تنظیم تاری Scrim.
+ * لایه‌بندی سه‌گانه:
  * لایه ۱: خود ModalBottomSheet (بدون تغییر)
  * لایه ۲: لایه نیمه‌شفاف تیره Scrim
- * لایه ۳: فرم زیرین (اعمال افکت Modifier.blur)
+ * لایه ۳: فرم زیرین با تاگل‌های تفکیک‌شده تاری هدر، بدنه و ناحیه نوار وضعیت (Status Bar)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +49,11 @@ fun BlurTestSettingsScreen(
     var blurRadius by remember { mutableFloatStateOf(16f) } // شعاع تاری به dp (پیش‌فرض 16)
     var scrimAlpha by remember { mutableFloatStateOf(0.40f) } // درصد تیرگی Scrim (پیش‌فرض 40%)
 
+    // تاگل‌سوییچ‌های مجزا برای کنترل هر بخش از فرم زیرین
+    var blurHeaderEnabled by remember { mutableStateOf(true) } // تاری هدر
+    var blurBodyEnabled by remember { mutableStateOf(true) } // تاری بدنه
+    var blurStatusBarEnabled by remember { mutableStateOf(true) } // تاری ناحیه استاتوس‌بار
+
     // متغیرهای فرم فرضی زیرین
     var customerName by remember { mutableStateOf("حاج رضا کریمی (طلافروشی درخشان)") }
     var orderTitle by remember { mutableStateOf("تابلو حروف برجسته چلنیوم کریستال پانچی") }
@@ -59,7 +64,6 @@ fun BlurTestSettingsScreen(
     var sendSmsEnabled by remember { mutableStateOf(true) }
     var officialInvoice by remember { mutableStateOf(false) }
     var warrantyCertificate by remember { mutableStateOf(true) }
-    var selectedChannelType by remember { mutableIntStateOf(1) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -71,26 +75,41 @@ fun BlurTestSettingsScreen(
     )
 
     Scaffold(
-        topBar = {
-            AppTopBar(
-                title = "تست افکت بلور (Glassmorphism)",
-                onBack = onBack
-            )
-        }
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
             // ==========================================
-            // لایه ۳: فرم زیرین (اعمال فیلتر Blur)
+            // لایه ۳: هدر و محدوده Status Bar (با کنترل مستقل بلور)
+            // ==========================================
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (animatedBlurRadius > 0.dp && ((blurHeaderEnabled && blurStatusBarEnabled) || blurHeaderEnabled)) {
+                            Modifier.blur(animatedBlurRadius)
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
+                AppTopBar(
+                    title = "تست افکت بلور (Glassmorphism)",
+                    onBack = onBack
+                )
+            }
+
+            // ==========================================
+            // لایه ۳: بدنه محتوای فرم (با کنترل مستقل بلور)
             // ==========================================
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .then(
-                        if (animatedBlurRadius > 0.dp) {
+                        if (animatedBlurRadius > 0.dp && blurBodyEnabled) {
                             Modifier.blur(animatedBlurRadius)
                         } else {
                             Modifier
@@ -100,7 +119,7 @@ fun BlurTestSettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // کارت راهنما و وضعیت لایه زیرین
+                // کارت وضعیت و راهنما
                 AppCard {
                     Column(
                         modifier = Modifier.padding(14.dp),
@@ -130,15 +149,15 @@ fun BlurTestSettingsScreen(
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "با باز شدن مودال، این فرم به مقدار ${blurRadius.toInt()}dp تار می‌شود.",
+                                    text = "هدر: ${if (blurHeaderEnabled) "تار" else "واضح"} | بدنه: ${if (blurBodyEnabled) "تار" else "واضح"} (${blurRadius.toInt()}dp)",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
 
                         Text(
-                            text = "این صفحه جهت ارزیابی زیبایی و خوانایی افکت شیشه‌ای تار (Glassmorphism) به جای Scrim کدر طراحی شده است.",
+                            text = "با باز کردن مودال زیر، می‌توانید با تاگل‌های اختصاصی، تار شدن هدر، بدنه یا کل صفحه را به دلخواه مقایسه کنید.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -158,7 +177,7 @@ fun BlurTestSettingsScreen(
                     Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "باز کردن مودال و تنظیم افکت بلور",
+                        text = "باز کردن مودال و تاگل‌های مقایسه بلور",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -273,7 +292,7 @@ fun BlurTestSettingsScreen(
                     }
                 }
 
-                // کارت خلاصه مالی (جهت ارزیابی وضوح المان‌های رنگی زیر بلور)
+                // کارت خلاصه مالی
                 AppCard {
                     Column(modifier = Modifier.padding(14.dp)) {
                         Text(
@@ -305,7 +324,7 @@ fun BlurTestSettingsScreen(
     }
 
     // =========================================================================
-    // لایه ۱ و لایه ۲: ModalBottomSheet به همراه Scrim سفارشی
+    // لایه ۱ و لایه ۲: ModalBottomSheet به همراه Scrim و تاگل‌های مقایسه زنده
     // =========================================================================
     if (showBottomSheet) {
         ModalBottomSheet(
@@ -320,8 +339,9 @@ fun BlurTestSettingsScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                    .padding(bottom = 32.dp),
+                    .padding(horizontal = 20.dp, vertical = 6.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // هدر مودال
@@ -350,12 +370,12 @@ fun BlurTestSettingsScreen(
                         }
                         Column {
                             Text(
-                                text = "تنظیمات لایه‌های بلور و شفافیت",
+                                text = "تنظیمات لایه‌ها و تفکیک بلور",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "لایه ۱: مودال | لایه ۲: Scrim | لایه ۳: فرم زیرین",
+                                text = "تاگل‌های زیر را جهت مقایسه زنده روشن/خاموش کنید",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -369,7 +389,107 @@ fun BlurTestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                // کنترل ۱: تنظیم شعاع بلور لایه زیرین
+                // بخش ۱: تاگل‌های تفکیک اعمال بلور بر بخش‌های مختلف فرم زیرین
+                Text(
+                    text = "۱. انتخاب بخش‌های تحت تأثیر بلور (تست زنده):",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // تاگل ۱: هدر فرم
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(
+                                    Icons.Default.ViewHeadline,
+                                    contentDescription = null,
+                                    tint = if (blurHeaderEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Column {
+                                    Text("تار شدن هدر فرم (TopAppBar)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("تار شدن عنوان بالای صفحه، دکمه بازگشت و خط افقی", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = blurHeaderEnabled,
+                                onCheckedChange = { blurHeaderEnabled = it },
+                                modifier = Modifier.testTag("switch_blur_header")
+                            )
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // تاگل ۲: بدنه فرم
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(
+                                    Icons.Default.ViewAgenda,
+                                    contentDescription = null,
+                                    tint = if (blurBodyEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Column {
+                                    Text("تار شدن بدنه و کادرهای فرم", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("تار شدن کارت‌ها، فیلدهای ورودی متن و سوییچ‌ها", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = blurBodyEnabled,
+                                onCheckedChange = { blurBodyEnabled = it },
+                                modifier = Modifier.testTag("switch_blur_body")
+                            )
+                        }
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // تاگل ۳: پوشش نوار وضعیت سیستم
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(
+                                    Icons.Default.VerticalAlignTop,
+                                    contentDescription = null,
+                                    tint = if (blurStatusBarEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Column {
+                                    Text("امتداد به محدوده نوار وضعیت (Status Bar)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("پوشش یکپارچه لبه بالایی زیر ساعت و باتری گوشی", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = blurStatusBarEnabled,
+                                onCheckedChange = { blurStatusBarEnabled = it },
+                                modifier = Modifier.testTag("switch_blur_statusbar")
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                // بخش ۲: تنظیم شعاع بلور لایه زیرین
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -377,7 +497,7 @@ fun BlurTestSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "شعاع تاری لایه زیرین (Blur Radius):",
+                            text = "۲. شعاع تاری لایه زیرین (Blur Radius):",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -412,7 +532,7 @@ fun BlurTestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                // کنترل ۲: تنظیم میزان تیرگی لایه Scrim
+                // بخش ۳: تنظیم میزان تیرگی لایه Scrim
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -420,7 +540,7 @@ fun BlurTestSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "تیرگی لایه میانی (Scrim Opacity):",
+                            text = "۳. تیرگی لایه میانی (Scrim Opacity):",
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -454,9 +574,9 @@ fun BlurTestSettingsScreen(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
-                // پیش‌تنظیم‌های آماده جهت مقایسه سریع
+                // پیش‌تنظیم‌های ترکیبی سریع
                 Text(
-                    text = "پیش‌تنظیم‌های سریع جهت مقایسه:",
+                    text = "پیش‌تنظیم‌های ترکیبی:",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -466,37 +586,45 @@ fun BlurTestSettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     FilterChip(
-                        selected = blurRadius == 0f && (scrimAlpha in 0.30f..0.35f),
+                        selected = blurHeaderEnabled && blurBodyEnabled && blurRadius == 16f,
                         onClick = {
-                            blurRadius = 0f
-                            scrimAlpha = 0.32f
-                        },
-                        label = { Text("متریال عادی (بدون بلور)", fontSize = 11.sp) },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    FilterChip(
-                        selected = blurRadius == 16f && (scrimAlpha in 0.38f..0.42f),
-                        onClick = {
+                            blurHeaderEnabled = true
+                            blurBodyEnabled = true
+                            blurStatusBarEnabled = true
                             blurRadius = 16f
                             scrimAlpha = 0.40f
                         },
-                        label = { Text("شیشه‌ای استاندارد", fontSize = 11.sp) },
+                        label = { Text("کل صفحه شیشه‌ای", fontSize = 11.sp) },
                         modifier = Modifier.weight(1f)
                     )
 
                     FilterChip(
-                        selected = blurRadius == 24f && (scrimAlpha in 0.53f..0.57f),
+                        selected = !blurHeaderEnabled && blurBodyEnabled && blurRadius == 16f,
                         onClick = {
-                            blurRadius = 24f
-                            scrimAlpha = 0.55f
+                            blurHeaderEnabled = false
+                            blurBodyEnabled = true
+                            blurStatusBarEnabled = false
+                            blurRadius = 16f
+                            scrimAlpha = 0.40f
                         },
-                        label = { Text("تار عمیق (Deep)", fontSize = 11.sp) },
+                        label = { Text("فقط بدنه (هدر واضح)", fontSize = 11.sp) },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    FilterChip(
+                        selected = blurRadius == 0f,
+                        onClick = {
+                            blurHeaderEnabled = false
+                            blurBodyEnabled = false
+                            blurRadius = 0f
+                            scrimAlpha = 0.32f
+                        },
+                        label = { Text("عادی بدون بلور", fontSize = 11.sp) },
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // دکمه تأیید و بستن
                 Button(
@@ -504,7 +632,7 @@ fun BlurTestSettingsScreen(
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("بستن مودال و بازگشت به فرم عادی")
+                    Text("بستن مودال و بازگشت به فرم")
                 }
             }
         }
