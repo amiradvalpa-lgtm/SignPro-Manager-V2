@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.fragment.app.FragmentActivity
+import com.example.ui.components.common.SheetEffectHost
 import com.example.ui.navigation.AppNavigation
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodels.SignageViewModel
@@ -40,7 +41,9 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        AppNavigation(viewModel = viewModel)
+                        SheetEffectHost {
+                            AppNavigation(viewModel = viewModel)
+                        }
                     }
                 }
             }

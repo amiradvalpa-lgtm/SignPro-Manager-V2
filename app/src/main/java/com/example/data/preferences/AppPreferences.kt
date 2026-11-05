@@ -3,6 +3,8 @@ package com.example.data.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +45,44 @@ class AppPreferences(private val context: Context) {
         val KEY_AUTH_ENABLED = booleanPreferencesKey("auth_enabled")
         val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
         val KEY_WARN_UNSAVED = booleanPreferencesKey("warn_unsaved_changes")
+
+        // Sheet Effect Config
+        val KEY_SHEET_BLUR_RADIUS = floatPreferencesKey("sheet_blur_radius")
+        val KEY_SHEET_SCRIM_ALPHA = floatPreferencesKey("sheet_scrim_alpha")
+        val KEY_SHEET_DURATION_MS = intPreferencesKey("sheet_duration_ms")
+        val KEY_SHEET_IMPL = stringPreferencesKey("sheet_impl")
+    }
+
+    val sheetBlurRadius: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHEET_BLUR_RADIUS] ?: 6f
+    }
+
+    val sheetScrimAlpha: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHEET_SCRIM_ALPHA] ?: 0.32f
+    }
+
+    val sheetDurationMs: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHEET_DURATION_MS] ?: 300
+    }
+
+    val sheetImpl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHEET_IMPL] ?: "CUSTOM"
+    }
+
+    suspend fun setSheetBlurRadius(value: Float) {
+        context.dataStore.edit { it[KEY_SHEET_BLUR_RADIUS] = value }
+    }
+
+    suspend fun setSheetScrimAlpha(value: Float) {
+        context.dataStore.edit { it[KEY_SHEET_SCRIM_ALPHA] = value }
+    }
+
+    suspend fun setSheetDurationMs(value: Int) {
+        context.dataStore.edit { it[KEY_SHEET_DURATION_MS] = value }
+    }
+
+    suspend fun setSheetImpl(value: String) {
+        context.dataStore.edit { it[KEY_SHEET_IMPL] = value }
     }
 
     val warnUnsavedChanges: Flow<Boolean> = context.dataStore.data.map { prefs ->

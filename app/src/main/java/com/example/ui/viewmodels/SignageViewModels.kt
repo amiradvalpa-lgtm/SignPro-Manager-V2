@@ -64,6 +64,7 @@ class SignageViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         refreshBackupList()
+        com.example.ui.components.common.SheetEffectConfig.bind(preferences, viewModelScope)
     }
 
     fun refreshBackupList() {

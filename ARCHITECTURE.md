@@ -320,15 +320,29 @@
   3. پیاده‌سازی مکانیزم قفل درگ: استفاده از `confirmValueChange` و متغیر کنترلی `allowDismiss`؛ کشیدن با دست به پایین به طور خودکار وتو شده و شیت به جای خود برمی‌گردد، مگر اینکه کاربر صریحاً دکمه بستن، لمس بیرون یا کلید Back را بزند.
   4. پشتیبانی پایدار از تنظیمات و حفظ State با باز و بسته شدن مودال.
 
+#### تصمیم ADR-028: استقرار میزبان سراسری افکت مودال (SheetEffectHost)، اتصال تنظیمات بلور به DataStore و حفظ امضای AppFormBottomSheet
+- **وضعیت:** تصویب شده
+- **مسئله:**
+  1. نیاز به تعمیم افکت تاری پس‌زمینه (Blur) و پوشش سراسری لایه Scrim (شامل نوار وضعیت و نوار ناوبری) به تمامی فرم‌ها و مودال‌های برنامه بدون نیاز به دستکاری یا بازنویسی کدهای موجود در تک‌تک صفحات و دیالوگ‌ها.
+  2. امکان انتخاب و سوییچ میان دو روش پیاده‌سازی مودال (روش ۱: `ModalBottomSheet` استاندارد متریال ۳، و روش ۲: شیت سفارشی بدون پنجره مجزا در لایه ریشه) در تنظیمات.
+  3. ذخیره‌سازی پایدار مقادیر شعاع بلور، درصد تیرگی Scrim، مدت زمان انیمیشن و نوع روش پیاده‌سازی انتخابی در پایگاه محلی `AppPreferences` (DataStore) تا با بستن برنامه و ورود مجدد کاربر بازنشانی نشوند.
+- **تصمیم:**
+  1. پیاده‌سازی ماژول متمرکز `SheetEffect.kt` در پکیج `com.example.ui.components.common` شامل کنترلر `SheetEffectController`، کانتینر میزبان `SheetEffectHost` و شیء پیکربندی `SheetEffectConfig`.
+  2. احاطه ناوبری اصلی برنامه (`AppNavigation`) توسط `SheetEffectHost` در لایه ریشه `MainActivity`.
+  3. حفظ ۱۰۰٪ امضا و قراردادهای پیشین کامپوننت `AppFormBottomSheet` در `CommonUi.kt` تا تمامی مودال‌های قبلی و آینده بدون نیاز به کوچک‌ترین تغییر کدی از قابلیت‌های بلور پویا و انتخاب روش بهره‌مند شوند.
+  4. افزودن کلیدهای چهارگانه تنظیمات شیت به `AppPreferences` و اتصال دوسویه (Two-Way Binding) میان `SheetEffectConfig` و `DataStore` از طریق متد `bind(preferences, scope)` در `SheetEffectHost` و مقداردهی اولیه در `SignageViewModel`، به طوری که هرگونه تغییر اسلایدرها و گزینه‌ها فوراً در حافظه پایدار ثبت و در راه‌اندازی‌های بعدی به صورت خودکار بازیابی گردد.
+
 ---
 
 ### ۳. ساختار پکیج‌ها و وظایف
 - `com.example.AlpaApplication`: نقطه ورود و لایه ثبت خطای سراسری اپلیکیشن.
-- `com.example.MainActivity`: اکتیویتی اصلی برنامه میزبان کامپوز و سیستم بارها.
+- `com.example.MainActivity`: اکتیویتی اصلی برنامه میزبان کامپوز، لایه سراسری `SheetEffectHost` و سیستم بارها.
+- `com.example.ui.components.common.SheetEffect`: ماژول مرکزی مدیریت افکت بلور، لایه Scrim، سوپروایزر شیت‌های سفارشی و تنظیمات پایدار مودال‌ها.
 - `com.example.ui.screens.crash.CrashReportActivity`: صفحه اختصاصی نمایش و اشتراک‌گذاری کرش در صورت بروز خطای ناشناخته.
 - `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`، `BlurTestSettingsScreen`).
 - `com.example.ui.screens.projects`: صفحه پروژه‌ها (`ProjectsScreen`)، جزئیات پروژه (`ProjectDetailScreen`)، مودال تاگل مراحل (`ProjectStagesToggleSheet`)، ماشین کمکی وضعیت (`ProjectStatusHelper`)، دیالوگ ویرایش، مشخصات و فاکتور پروژه.
 - `com.example.ui.screens.dashboard`: صفحه داشبورد اصلی برنامه (`DashboardScreen`) شامل دکمه‌های دسترسی سریع، کارت‌های دو ستونه مالی و کارگاهی و پیش‌نمایش‌های جامع.
+- `com.example.data.preferences`: مدیریت ماندگاری تنظیمات برنامه، پوسته، رنگ، تدابیر امنیتی و پارامترهای افکت مودال (`AppPreferences`).
 - `com.example.data.local`: انتیتی‌ها، دیتابیس Room و نمونه داده‌های اولیه تابلوسازی.
 - `com.example.util`: ابزارهای کمکی (تبدیل تاریخ جلالی، ابزار تاریخچه تماس CallLogHelper، تولید PDF فاکتور، پشتیبان‌گیری، رمزنگاری و ثبت کرش).
 

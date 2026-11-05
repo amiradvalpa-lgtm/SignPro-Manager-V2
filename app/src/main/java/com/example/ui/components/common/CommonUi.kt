@@ -24,6 +24,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -1211,13 +1212,16 @@ fun UnitSelectorDropdown(
     }
 }
 
+
 /**
- * استاندارد ۱.۲ و ۳ سند توافقنامه: ساختار فرم‌های مدال تمام‌عرض با اسکرول، هدر اختصاصی و تم هماهنگ
- * - اصل طراحی ماژولار و DRY: مدیریت یکپارچه وضعیت تغییرات ذخیره‌نشده (Dirty Guard) در تمام فرم‌ها
- * - حذف دکمه ضربدر (X) از هدر فرم‌ها (خروج صرفاً از طریق انصراف، بک فیزیکی یا درگ)
- * - رفع فاصله اضافی بالای شیت با بهینه‌سازی Drag Handle
- * - رفع خطای رندر در Preview با تفکیک LocalInspectionMode
- * - جلوگیری فعال از بسته شدن شیت پیش از هشدار با confirmValueChange
+ * شیت فرم استاندارد برنامه. امضا و رفتار (isDirty / onAttemptDismiss / ...) مثل قبل است.
+ *
+ * بلور، تیرگی و انیمیشن از SheetEffectConfig می‌آیند و نیاز به تنظیم در هر فرم نیست.
+ * روش اجرا (ModalBottomSheet یا شیت سفارشی) از SheetEffectConfig.impl خوانده می‌شود
+ * و لحظه ساخته شدن شیت ثابت می‌ماند.
+ *
+ * پیش‌نیاز: SheetEffectHost باید یک‌بار در ریشه برنامه (MainActivity) قرار گرفته باشد.
+ * اگر نبود، شیت با Scrim پیش‌فرض M3 (بدون بلور) کار می‌کند.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1232,160 +1236,295 @@ fun AppFormBottomSheet(
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isInspection = LocalInspectionMode.current
+    val controller = LocalSheetEffect.current
+    val impl = remember { SheetEffectConfig.impl }
 
-    if (isInspection) {
-        // Compose Preview (Layoutlib / AI Studio / Android Studio) Mode:
-        // رندر مستقیم روی سرفیس جهت پیشگیری از خطای رندر پنجره‌های ModalBottomSheetPopup
-        Surface(
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            color = MaterialTheme.colorScheme.background,
-            modifier = modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            ) {
-                // Drag handle با ارتفاع استاندارد و فاصله متناسب
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .width(36.dp)
-                            .height(4.dp),
-                        shape = RoundedCornerShape(2.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ) {}
-                }
+    when {
+        isInspection -> PreviewSheet(title, subtitle, modifier, content)
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (subtitle != null) {
-                            Text(
-                                text = subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                content()
-            }
-        }
-    } else {
-        // Runtime Mode:
-        val currentIsDirty by rememberUpdatedState(isDirty)
-        val currentWarnUnsaved by rememberUpdatedState(warnUnsavedChanges)
-        val currentOnAttemptDismiss by rememberUpdatedState(onAttemptDismiss)
-        val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
-
-        val sheetState = rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
-            confirmValueChange = { targetValue ->
-                if (targetValue == SheetValue.Hidden) {
-                    if (currentIsDirty && currentWarnUnsaved) {
-                        currentOnAttemptDismiss()
-                        false // رد تغییر حالت به Hidden جهت جلوگیری از بسته شدن خودکار فرم
-                    } else {
-                        true
-                    }
-                } else {
-                    true
-                }
-            }
+        controller != null && impl == SheetImpl.CUSTOM -> CustomSheetPortal(
+            controller = controller,
+            title = title,
+            subtitle = subtitle,
+            onDismissRequest = onDismissRequest,
+            modifier = modifier,
+            isDirty = isDirty,
+            warnUnsavedChanges = warnUnsavedChanges,
+            onAttemptDismiss = onAttemptDismiss,
+            content = content
         )
 
-        ModalBottomSheet(
-            onDismissRequest = {
-                if (currentIsDirty && currentWarnUnsaved) {
-                    currentOnAttemptDismiss()
-                } else {
-                    currentOnDismissRequest()
-                }
-            },
-            sheetState = sheetState,
-            properties = ModalBottomSheetDefaults.properties(
-                shouldDismissOnBackPress = !(currentIsDirty && currentWarnUnsaved)
-            ),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            containerColor = MaterialTheme.colorScheme.background,
-            dragHandle = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp, bottom = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .width(36.dp)
-                            .height(4.dp),
-                        shape = RoundedCornerShape(2.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    ) {}
-                }
-            },
-            modifier = modifier.fillMaxWidth()
-        ) {
-            BackHandler(enabled = currentIsDirty && currentWarnUnsaved) {
-                currentOnAttemptDismiss()
-            }
+        else -> DialogSheet(
+            controller = controller,
+            title = title,
+            subtitle = subtitle,
+            onDismissRequest = onDismissRequest,
+            modifier = modifier,
+            isDirty = isDirty,
+            warnUnsavedChanges = warnUnsavedChanges,
+            onAttemptDismiss = onAttemptDismiss,
+            content = content
+        )
+    }
+}
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .imePadding()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = title,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (subtitle != null) {
-                            Text(
-                                text = subtitle,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(bottom = 8.dp)
+// =============================================================================
+// اجزای مشترک
+// =============================================================================
+
+@Composable
+internal fun SheetHandle(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp, bottom = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            modifier = Modifier
+                .width(36.dp)
+                .height(4.dp),
+            shape = RoundedCornerShape(2.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        ) {}
+    }
+}
+
+@Composable
+internal fun SheetHeader(title: String, subtitle: String?) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                content()
             }
         }
     }
 }
 
+@Composable
+internal fun SheetBodyColumn(
+    title: String,
+    subtitle: String?,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = modifier) {
+        SheetHeader(title, subtitle)
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        content()
+    }
+}
+
+// =============================================================================
+// Preview (Layoutlib): رندر مستقیم بدون پنجره
+// =============================================================================
+
+@Composable
+private fun PreviewSheet(
+    title: String,
+    subtitle: String?,
+    modifier: Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        color = MaterialTheme.colorScheme.background,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            SheetHandle()
+            SheetBodyColumn(title, subtitle, content = content)
+        }
+    }
+}
+
+// =============================================================================
+// روش ۲: شیت سفارشی (محتوا به SheetEffectHost منتقل و آنجا رسم می‌شود)
+// =============================================================================
+
+@Composable
+private fun CustomSheetPortal(
+    controller: SheetEffectController,
+    title: String,
+    subtitle: String?,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier,
+    isDirty: Boolean,
+    warnUnsavedChanges: Boolean,
+    onAttemptDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val entry = remember { CustomSheetEntry() }
+
+    // به‌روزرسانی اطلاعات در هر recomposition (قبل از DisposableEffect اجرا می‌شود)
+    SideEffect {
+        entry.title = title
+        entry.subtitle = subtitle
+        entry.modifier = modifier
+        entry.isDirty = isDirty
+        entry.warnUnsaved = warnUnsavedChanges
+        entry.onAttemptDismiss = onAttemptDismiss
+        entry.onDismissRequest = onDismissRequest
+        entry.content = content
+    }
+
+    // Back: همان قفل isDirty (اگر لازم بود onAttemptDismiss صدا زده می‌شود)
+    BackHandler(enabled = !entry.closing) {
+        controller.requestDismiss(entry)
+    }
+
+    DisposableEffect(entry) {
+        controller.showCustom(entry)
+        onDispose { controller.releaseCustom(entry) }
+    }
+}
+
+// =============================================================================
+// روش ۱: ModalBottomSheet (با بلور و تیرگی همگام از روی offset واقعی شیت)
+// =============================================================================
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DialogSheet(
+    controller: SheetEffectController?,
+    title: String,
+    subtitle: String?,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier,
+    isDirty: Boolean,
+    warnUnsavedChanges: Boolean,
+    onAttemptDismiss: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val currentIsDirty by rememberUpdatedState(isDirty)
+    val currentWarnUnsaved by rememberUpdatedState(warnUnsavedChanges)
+    val currentOnAttemptDismiss by rememberUpdatedState(onAttemptDismiss)
+    val currentOnDismissRequest by rememberUpdatedState(onDismissRequest)
+
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { targetValue ->
+            if (targetValue == SheetValue.Hidden) {
+                if (currentIsDirty && currentWarnUnsaved) {
+                    currentOnAttemptDismiss()
+                    false // رد تغییر حالت به Hidden جهت جلوگیری از بسته شدن خودکار فرم
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        }
+    )
+
+    var hiddenPx by remember { mutableFloatStateOf(Float.NaN) }
+    var expandedPx by remember { mutableFloatStateOf(Float.NaN) }
+    var contentHeightPx by remember { mutableFloatStateOf(0f) }
+    var handleHeightPx by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val navBottomPx = WindowInsets.navigationBars.getBottom(density).toFloat()
+
+    if (controller != null) {
+        // progress ۰..۱ از روی موقعیت واقعی شیت
+        val compute: () -> Float = compute@{
+            if (sheetState.currentValue == SheetValue.Expanded &&
+                sheetState.targetValue == SheetValue.Expanded
+            ) return@compute 1f
+
+            val offset = runCatching { sheetState.requireOffset() }.getOrDefault(Float.NaN)
+            if (offset.isNaN()) return@compute 0f
+
+            val hidden = if (hiddenPx.isNaN()) controller.containerPx else hiddenPx
+            // تا قبل از رسیدن شیت به حالت باز، موقعیت باز تخمین زده می‌شود
+            val expanded = if (!expandedPx.isNaN()) expandedPx
+            else hidden - (contentHeightPx + handleHeightPx + navBottomPx)
+            val range = hidden - expanded
+            if (range <= 1f) 0f else ((hidden - offset) / range).coerceIn(0f, 1f)
+        }
+        val computeState = rememberUpdatedState(compute)
+
+        // کالیبراسیون: حالت بسته = بیشترین offset دیده‌شده ، حالت باز = offset وقتی Expanded است
+        LaunchedEffect(sheetState) {
+            launch {
+                snapshotFlow {
+                    runCatching { sheetState.requireOffset() }.getOrDefault(Float.NaN)
+                }.collect { offset ->
+                    if (!offset.isNaN() && (hiddenPx.isNaN() || offset > hiddenPx)) hiddenPx = offset
+                }
+            }
+            snapshotFlow {
+                if (sheetState.currentValue == SheetValue.Expanded) {
+                    runCatching { sheetState.requireOffset() }.getOrDefault(Float.NaN)
+                } else {
+                    Float.NaN
+                }
+            }.collect { offset ->
+                if (!offset.isNaN()) expandedPx = offset
+            }
+        }
+
+        DisposableEffect(controller) {
+            val token = Any()
+            controller.attachDialog(token) { computeState.value() }
+            onDispose { controller.releaseDialog(token, computeState.value()) }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = {
+            if (currentIsDirty && currentWarnUnsaved) {
+                currentOnAttemptDismiss()
+            } else {
+                currentOnDismissRequest()
+            }
+        },
+        sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(
+            shouldDismissOnBackPress = !(currentIsDirty && currentWarnUnsaved)
+        ),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.background,
+        // وقتی SheetEffectHost هست، تیرگی را میزبان از روی offset شیت می‌کشد
+        scrimColor = if (controller != null) Color.Transparent else BottomSheetDefaults.ScrimColor,
+        dragHandle = {
+            SheetHandle(Modifier.onSizeChanged { handleHeightPx = it.height.toFloat() })
+        },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        BackHandler(enabled = currentIsDirty && currentWarnUnsaved) {
+            currentOnAttemptDismiss()
+        }
+
+        SheetBodyColumn(
+            title = title,
+            subtitle = subtitle,
+            modifier = Modifier
+                .onSizeChanged { contentHeightPx = it.height.toFloat() }
+                .fillMaxWidth()
+                .imePadding(),
+            content = content
+        )
+    }
+}
