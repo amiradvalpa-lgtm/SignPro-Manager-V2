@@ -45,6 +45,7 @@ class AppPreferences(private val context: Context) {
         val KEY_AUTH_ENABLED = booleanPreferencesKey("auth_enabled")
         val KEY_BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
         val KEY_WARN_UNSAVED = booleanPreferencesKey("warn_unsaved_changes")
+        val KEY_SHOW_PLACEHOLDERS = booleanPreferencesKey("show_placeholders")
 
         // Sheet Effect Config
         val KEY_SHEET_BLUR_RADIUS = floatPreferencesKey("sheet_blur_radius")
@@ -91,6 +92,14 @@ class AppPreferences(private val context: Context) {
 
     suspend fun setWarnUnsavedChanges(warn: Boolean) {
         context.dataStore.edit { it[KEY_WARN_UNSAVED] = warn }
+    }
+
+    val showPlaceholders: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SHOW_PLACEHOLDERS] ?: true
+    }
+
+    suspend fun setShowPlaceholders(show: Boolean) {
+        context.dataStore.edit { it[KEY_SHOW_PLACEHOLDERS] = show }
     }
 
     val currencyUnit: Flow<String> = context.dataStore.data.map { prefs ->

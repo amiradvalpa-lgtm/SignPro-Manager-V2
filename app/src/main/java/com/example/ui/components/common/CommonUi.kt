@@ -47,6 +47,21 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+val LocalShowPlaceholders = compositionLocalOf { true }
+
+@Composable
+fun appOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+    focusedContainerColor = Color.Transparent,
+    unfocusedContainerColor = Color.Transparent,
+    disabledContainerColor = Color.Transparent,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+)
+
 @Composable
 fun AppHeaderDivider(
     modifier: Modifier = Modifier
@@ -140,16 +155,19 @@ fun AppSearchBar(
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
+            val showPlaceholders = LocalShowPlaceholders.current
             TextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = {
-                    Text(
-                        placeholder,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                    )
-                },
+                placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
+                    {
+                        Text(
+                            placeholder,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                } else null,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
@@ -240,6 +258,8 @@ fun PhoneInputField(
         FormatUtils.toEnglishDigits(value).filter { it.isDigit() }.take(11)
     }
 
+    val showPlaceholders = LocalShowPlaceholders.current
+
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = rawDigits,
@@ -252,9 +272,9 @@ fun PhoneInputField(
                 }
                 onValueChange(digits)
             },
-            label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
-            placeholder = {
-                if (placeholder.isNotEmpty()) {
+            label = { Text(label) },
+            placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
+                {
                     Text(
                         text = placeholder,
                         style = LocalTextStyle.current.copy(
@@ -264,7 +284,7 @@ fun PhoneInputField(
                         )
                     )
                 }
-            },
+            } else null,
             visualTransformation = remember { PhoneVisualTransformation() },
             leadingIcon = {
                 Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -287,10 +307,7 @@ fun PhoneInputField(
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(testTag),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-            )
+            colors = appOutlinedTextFieldColors()
         )
         if (isError && !errorMessage.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(4.dp))
@@ -529,12 +546,20 @@ fun PersianTextField(
     singleLine: Boolean = true,
     testTag: String = "persian_text_field"
 ) {
+    val showPlaceholders = LocalShowPlaceholders.current
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
-            placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
+            label = { Text(label) },
+            placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
+                {
+                    Text(
+                        text = placeholder,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                    )
+                }
+            } else null,
             leadingIcon = if (leadingIcon != null) {
                 { Icon(leadingIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
             } else null,
@@ -549,11 +574,7 @@ fun PersianTextField(
             singleLine = singleLine,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                focusedPlaceholderColor  = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f)
-            ),
+            colors = appOutlinedTextFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(testTag)
@@ -617,6 +638,7 @@ fun CurrencyInputField(
 
     val unitLabel = if (currencyUnit == "RIAL") "ریال" else "تومان"
 
+    val showPlaceholders = LocalShowPlaceholders.current
     Column(modifier = modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = rawDigits,
@@ -626,8 +648,10 @@ fun CurrencyInputField(
                 val parsed = digits.toLongOrNull() ?: 0L
                 onAmountChange(parsed)
             },
-            label = { Text(label, style = MaterialTheme.typography.bodyMedium) },
-            placeholder = { Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) },
+            label = { Text(label) },
+            placeholder = if (showPlaceholders) {
+                { Text("0", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)) }
+            } else null,
             visualTransformation = remember { ThousandsSeparatorVisualTransformation() },
             textStyle = LocalTextStyle.current.copy(
                 textDirection = TextDirection.Ltr,
@@ -646,10 +670,7 @@ fun CurrencyInputField(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
-            ),
+            colors = appOutlinedTextFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(testTag)
@@ -701,6 +722,7 @@ fun PersianDateField(
                 )
             },
             shape = RoundedCornerShape(14.dp),
+            colors = appOutlinedTextFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag(testTag)
@@ -1191,6 +1213,7 @@ fun UnitSelectorDropdown(
             label = { Text("واحد") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             shape = RoundedCornerShape(14.dp),
+            colors = appOutlinedTextFieldColors(),
             modifier = Modifier
                 .menuAnchor()
                 .fillMaxWidth()

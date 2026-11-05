@@ -332,6 +332,19 @@
   3. حفظ ۱۰۰٪ امضا و قراردادهای پیشین کامپوننت `AppFormBottomSheet` در `CommonUi.kt` تا تمامی مودال‌های قبلی و آینده بدون نیاز به کوچک‌ترین تغییر کدی از قابلیت‌های بلور پویا و انتخاب روش بهره‌مند شوند.
   4. افزودن کلیدهای چهارگانه تنظیمات شیت به `AppPreferences` و اتصال دوسویه (Two-Way Binding) میان `SheetEffectConfig` و `DataStore` از طریق متد `bind(preferences, scope)` در `SheetEffectHost` و مقداردهی اولیه در `SignageViewModel`، به طوری که هرگونه تغییر اسلایدرها و گزینه‌ها فوراً در حافظه پایدار ثبت و در راه‌اندازی‌های بعدی به صورت خودکار بازیابی گردد.
 
+#### تصمیم ADR-029: استانداردسازی فونت و رنگ Floating Label فیلدهای ورودی، همسان‌سازی دراپ‌داون‌ها و کنترل نمایش متون راهنما (Placeholders)
+- **وضعیت:** تصویب شده
+- **مسئله:**
+  1. هاردکد شدن سایز فونت (`style = MaterialTheme.typography.bodyMedium`) در برچسب‌های ورودی‌ها (`PersianTextField`، `PhoneInputField`، `CurrencyInputField`) که مانع از انیمیشن و کوچک‌شدن برچسب شناور (Floating Label) به اندازه استاندارد `bodySmall` (۱۲sp) می‌شد.
+  2. شباهت بیش‌ازحد رنگ لیبل در حالت غیرفوکوس با دیتای واردشده که احتمال خطای دید و اشتباه گرفتن لیبل با مقدار واقعی فیلد توسط کاربر را افزایش می‌داد.
+  3. استفاده از کانتینر مات و ناهماهنگ (`focusedContainerColor = MaterialTheme.colorScheme.surface`) در کامپوننت‌های `ExposedDropdownMenuBox` دیالوگ‌ها که روی پس‌زمینه شیت‌ها کادری وصله‌مانند و متفاوت از سایر فیلدها ایجاد می‌کرد.
+  4. عدم وجود گزینه کنترلی جهت فعال یا غیرفعال‌سازی نمایش متون راهنمای کم‌رنگ نمونه (Placeholder) در فرم‌ها.
+- **تصمیم:**
+  1. حذف استایل هاردکد از درون `label = { Text(...) }` جهت فعال‌سازی گذار استاندارد متریال ۳ بین سایز متن در حالت استراحت و سایز `bodySmall` (۱۲sp) در حالت شناور در سراسر فیلدهای ورودی برنامه.
+  2. متمرکزسازی رنگ‌بندی فیلدها در متد کمکی `appOutlinedTextFieldColors`: تنظیم `unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)` جهت تمایز کامل با دیتای واقعی، تنظیم `focusedLabelColor = MaterialTheme.colorScheme.primary` و شفاف‌سازی کامل کانتینر (`Color.Transparent`) برای هماهنگی ۱۰۰٪ با پس‌زمینه فرم‌ها و شیت‌ها.
+  3. اصلاح رنگ پس‌زمینه تمامی `ExposedDropdownMenuBox`های برنامه در دیالوگ‌های پروژه، مشخصات، امور مالی و فاکتور به `appOutlinedTextFieldColors`.
+  4. ایجاد `LocalShowPlaceholders` مبتنی بر `CompositionLocal` در `MainActivity` و اتصال آن به کلید پایدار `KEY_SHOW_PLACEHOLDERS` در `AppPreferences` و `SignageViewModel`، به همراه تعبیه تاگل‌سوییچ اختصاصی در صفحه تنظیمات نرم‌افزار جهت کنترل یکپارچه و واکنشی نمایش متون راهنما در کل اپلیکیشن.
+
 ---
 
 ### ۳. ساختار پکیج‌ها و وظایف

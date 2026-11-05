@@ -21,6 +21,7 @@ import com.example.ui.components.common.PersianDateField
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnsavedChangesDialog
+import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.JalaliDate
 import java.util.UUID
@@ -144,10 +145,7 @@ fun ProjectEditDialog(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
                     isError = customerError != null,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)

@@ -56,7 +56,7 @@
 | `/app/src/main/java/com/example/data/local/entities/Entities.kt` | انتیتی‌های دیتابیس (Entities) | مدل‌های داده‌ای مشتری، پروژه، مشخصات فنی، فاکتور، اقلام فاکتور، هزینه‌ها، چک‌ها، قرارداد و مراحل. |
 | `/app/src/main/java/com/example/data/local/dao/Daos.kt` | رابط‌های دسترسی به داده (DAOs) | کوئری‌های تعاملی با SQLite به همراه Flowهای واکنشی و عملیات افزودن، ویرایش و حذف نرم. |
 | `/app/src/main/java/com/example/data/local/SampleDataGenerator.kt` | تولیدکننده داده‌های نمونه کارگاهی | درج داده‌های واقعی تابلوسازی (پروژه‌های چلنیوم، استیل، نئون، مشتریان و هزینه‌ها) در اولین اجرا. |
-| `/app/src/main/java/com/example/data/preferences/AppPreferences.kt` | مدیریت تنظیمات پایدار کاربر | ذخیره تنظیمات مانند حالت تم (تاریک/روشن)، رنگ اصلی، قفل بایومتریک و هشدار تغییرات فرم. |
+| `/app/src/main/java/com/example/data/preferences/AppPreferences.kt` | مدیریت تنظیمات پایدار کاربر | ذخیره تنظیمات مانند حالت تم (تاریک/روشن)، رنگ اصلی، قفل بایومتریک، هشدار تغییرات فرم و سوئیچ نمایش متون راهنما (Placeholders). |
 | `/app/src/main/java/com/example/data/repository/SignageRepository.kt` | مخزن داده متمرکز (Repository) | لایه واسط میان DAOها و لایه ارائه؛ منبع واحد حقیقت (Single Source of Truth) برای ViewModelها. |
 
 #### ۴.۳. لایه ناوبری و جهت‌یابی (`/app/src/main/java/com/example/ui/navigation/`)
@@ -68,7 +68,7 @@
 #### ۴.۴. کامپوننت‌های مشترک رابط کاربری (`/app/src/main/java/com/example/ui/components/`)
 | مسیر کامل نسبی | وظیفه و کاربرد | مسئولیت اصلی و ارتباط با سایر بخش‌ها |
 | :--- | :--- | :--- |
-| `/app/src/main/java/com/example/ui/components/common/CommonUi.kt` | کامپوننت‌های پایه و مشترک برنامه | شامل `AppTopBar`, `AppHeaderDivider`, `AppSearchBar`, `PhoneInputField`, `AppCard`, `PersianTextField`, `CurrencyInputField`, `PersianDateField`, `StickyBottomActionBar`, `UnsavedChangesDialog`, `AppFormBottomSheet` و منوهای کارت. |
+| `/app/src/main/java/com/example/ui/components/common/CommonUi.kt` | کامپوننت‌های پایه و مشترک برنامه | شامل `AppTopBar`, `AppHeaderDivider`, `AppSearchBar`, `PhoneInputField`, `AppCard`, `PersianTextField`, `CurrencyInputField`, `PersianDateField`, `appOutlinedTextFieldColors`, `LocalShowPlaceholders`, `StickyBottomActionBar`, `UnsavedChangesDialog`, `AppFormBottomSheet` و منوهای کارت. |
 | `/app/src/main/java/com/example/ui/components/common/SheetEffect.kt` | ماژول سراسری افکت و انیمیشن شیت‌ها | مدیریت افکت بلور (Glassmorphism)، کنترلر `SheetEffectController`، کانتینر `SheetEffectHost`، شیء پیکربندی پویا `SheetEffectConfig` و لایه شیت سفارشی. |
 | `/app/src/main/java/com/example/ui/components/common/SyncModalSystemBars.kt` | کامپوننت همگام‌ساز نوارهای سیستم | ابزار جانبی جهت همگام‌سازی بصری نوارهای سیستمی در شرایط خاص. |
 | `/app/src/main/java/com/example/ui/components/pickers/PersianDatePickerModal.kt` | مودال تقویم شمسی جلالی | دیالوگ انتخاب تاریخ هجری شمسی ۱۰۰٪ بومی با نمایش روزهای ماه، تبدیل سال و ماه و روز. |

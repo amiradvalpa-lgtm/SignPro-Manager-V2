@@ -33,9 +33,11 @@ import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.data.local.entities.ProjectSpecEntity
 import com.example.ui.components.common.AppFormBottomSheet
+import com.example.ui.components.common.LocalShowPlaceholders
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnsavedChangesDialog
+import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.theme.MyApplicationTheme
 import java.io.File
 import java.util.UUID
@@ -237,10 +239,7 @@ fun SpecEditDialog(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = signTypeDropdownExpanded) },
                     isError = signTypeError != null,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryEditable)
@@ -273,6 +272,8 @@ fun SpecEditDialog(
                 color = MaterialTheme.colorScheme.primary
             )
 
+            val showPlaceholders = LocalShowPlaceholders.current
+
             // Row 1: Length
             OutlinedTextField(
                 value = lengthStr,
@@ -281,7 +282,9 @@ fun SpecEditDialog(
                     lengthError = null
                 },
                 label = { Text("طول") },
-                placeholder = { Text("مثال: ۳۵۰") },
+                placeholder = if (showPlaceholders) {
+                    { Text("مثال: ۳۵۰") }
+                } else null,
                 trailingIcon = {
                     Text(
                         text = "سانتی‌متر",
@@ -296,10 +299,7 @@ fun SpecEditDialog(
                     { Text(lengthError ?: "", color = MaterialTheme.colorScheme.error) }
                 } else null,
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors = appOutlinedTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("spec_length_input")
@@ -313,7 +313,9 @@ fun SpecEditDialog(
                     widthError = null
                 },
                 label = { Text("عرض") },
-                placeholder = { Text("مثال: ۱۲۰") },
+                placeholder = if (showPlaceholders) {
+                    { Text("مثال: ۱۲۰") }
+                } else null,
                 trailingIcon = {
                     Text(
                         text = "سانتی‌متر",
@@ -328,10 +330,7 @@ fun SpecEditDialog(
                     { Text(widthError ?: "", color = MaterialTheme.colorScheme.error) }
                 } else null,
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors = appOutlinedTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("spec_width_input")
@@ -345,7 +344,9 @@ fun SpecEditDialog(
                     depthError = null
                 },
                 label = { Text("عمق") },
-                placeholder = { Text("مثال: ۸") },
+                placeholder = if (showPlaceholders) {
+                    { Text("مثال: ۸") }
+                } else null,
                 trailingIcon = {
                     Text(
                         text = "سانتی‌متر",
@@ -360,10 +361,7 @@ fun SpecEditDialog(
                     { Text(depthError ?: "", color = MaterialTheme.colorScheme.error) }
                 } else null,
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors = appOutlinedTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("spec_depth_input")

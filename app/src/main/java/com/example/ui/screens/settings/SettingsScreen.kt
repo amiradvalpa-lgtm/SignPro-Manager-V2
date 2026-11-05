@@ -66,6 +66,7 @@ fun SettingsScreen(
     val trashItems by viewModel.trashItems.collectAsState()
     val recentAudits by viewModel.recentAudits.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
+    val showPlaceholders by viewModel.showPlaceholders.collectAsState()
 
     var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
 
@@ -81,6 +82,7 @@ fun SettingsScreen(
                 themeMode = themeMode,
                 primaryColorKey = primaryColorKey,
                 warnUnsavedChanges = warnUnsavedChanges,
+                showPlaceholders = showPlaceholders,
                 isAuthEnabled = isAuthEnabled,
                 isBiometricEnabled = isBiometricEnabled,
                 categoriesCount = categories.size,
@@ -94,6 +96,7 @@ fun SettingsScreen(
                 onSetTheme = { viewModel.setThemeMode(it) },
                 onSetPrimaryColor = { viewModel.setPrimaryColorKey(it) },
                 onSetWarnUnsaved = { viewModel.setWarnUnsavedChanges(it) },
+                onSetShowPlaceholders = { viewModel.setShowPlaceholders(it) },
                 onOpenExpenseCategories = { currentSubScreen = SettingsSubScreen.EXPENSE_CATEGORIES },
                 onOpenProjectStages = { currentSubScreen = SettingsSubScreen.PROJECT_STAGES },
                 onOpenTrash = { currentSubScreen = SettingsSubScreen.TRASH },
@@ -254,6 +257,7 @@ fun SettingsContent(
     themeMode: String,
     primaryColorKey: String,
     warnUnsavedChanges: Boolean,
+    showPlaceholders: Boolean,
     isAuthEnabled: Boolean,
     isBiometricEnabled: Boolean,
     categoriesCount: Int,
@@ -267,6 +271,7 @@ fun SettingsContent(
     onSetTheme: (String) -> Unit,
     onSetPrimaryColor: (String) -> Unit,
     onSetWarnUnsaved: (Boolean) -> Unit,
+    onSetShowPlaceholders: (Boolean) -> Unit,
     onOpenExpenseCategories: () -> Unit,
     onOpenProjectStages: () -> Unit,
     onOpenTrash: () -> Unit,
@@ -440,6 +445,25 @@ fun SettingsContent(
                                 checked = warnUnsavedChanges,
                                 onCheckedChange = onSetWarnUnsaved,
                                 modifier = Modifier.testTag("switch_warn_unsaved")
+                            )
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+
+                        // Show placeholders switch
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("نمایش متن راهنمای ورودی‌ها (Placeholder)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text("نمایش متن‌های نمونه کم‌رنگ داخل کادرهای ورودی", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(
+                                checked = showPlaceholders,
+                                onCheckedChange = onSetShowPlaceholders,
+                                modifier = Modifier.testTag("switch_show_placeholders")
                             )
                         }
                     }
@@ -983,6 +1007,7 @@ fun SettingsScreenPreview() {
                 themeMode = "SYSTEM",
                 primaryColorKey = "AMBER",
                 warnUnsavedChanges = true,
+                showPlaceholders = true,
                 isAuthEnabled = true,
                 isBiometricEnabled = false,
                 categoriesCount = 8,
@@ -996,6 +1021,7 @@ fun SettingsScreenPreview() {
                 onSetTheme = {},
                 onSetPrimaryColor = {},
                 onSetWarnUnsaved = {},
+                onSetShowPlaceholders = {},
                 onOpenExpenseCategories = {},
                 onOpenProjectStages = {},
                 onOpenTrash = {},

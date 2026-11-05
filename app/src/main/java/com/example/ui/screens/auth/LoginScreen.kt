@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import com.example.ui.components.common.AppCard
+import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.viewmodels.SignageViewModel
 import com.example.util.SecurityUtils
 
@@ -129,6 +130,7 @@ fun LoginScreen(
                     singleLine = true,
                     isError = errorMessage != null,
                     shape = RoundedCornerShape(14.dp),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("password_input_field")

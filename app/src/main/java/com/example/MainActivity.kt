@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.fragment.app.FragmentActivity
+import com.example.ui.components.common.LocalShowPlaceholders
 import com.example.ui.components.common.SheetEffectHost
 import com.example.ui.navigation.AppNavigation
 import com.example.ui.theme.MyApplicationTheme
@@ -30,13 +31,17 @@ class MainActivity : FragmentActivity() {
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()
             val primaryColorKey by viewModel.primaryColorKey.collectAsState()
+            val showPlaceholders by viewModel.showPlaceholders.collectAsState()
 
             MyApplicationTheme(
                 themeMode = themeMode,
                 primaryColorKey = primaryColorKey
             ) {
                 // Mandatory Persian RTL support from the very first frame
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides LayoutDirection.Rtl,
+                    LocalShowPlaceholders provides showPlaceholders
+                ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background

@@ -32,6 +32,7 @@ class SignageViewModel(application: Application) : AndroidViewModel(application)
     val primaryColorKey = preferences.primaryColorKey.stateIn(viewModelScope, SharingStarted.Eagerly, "AMBER")
     val contractorInfo = preferences.contractorInfo.stateIn(viewModelScope, SharingStarted.Eagerly, ContractorInfo())
     val warnUnsavedChanges = preferences.warnUnsavedChanges.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val showPlaceholders = preferences.showPlaceholders.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     // -------------------------------------------------------------
     // Customers State
@@ -162,6 +163,12 @@ class SignageViewModel(application: Application) : AndroidViewModel(application)
     fun setWarnUnsavedChanges(warn: Boolean) {
         viewModelScope.launch {
             preferences.setWarnUnsavedChanges(warn)
+        }
+    }
+
+    fun setShowPlaceholders(show: Boolean) {
+        viewModelScope.launch {
+            preferences.setShowPlaceholders(show)
         }
     }
 

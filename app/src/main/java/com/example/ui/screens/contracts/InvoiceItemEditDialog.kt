@@ -18,10 +18,12 @@ import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.InvoiceItemEntity
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.CurrencyInputField
+import com.example.ui.components.common.LocalShowPlaceholders
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnitSelectorDropdown
 import com.example.ui.components.common.UnsavedChangesDialog
+import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.FormatUtils
 import java.util.UUID
@@ -161,10 +163,7 @@ fun InvoiceItemEditDialog(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = serviceDropdownExpanded) },
                     isError = serviceTypeError != null,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryEditable)
@@ -263,18 +262,18 @@ fun InvoiceItemEditDialog(
             }
 
             // Additional notes with double height
+            val showPlaceholders = LocalShowPlaceholders.current
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
                 label = { Text("توضیحات تکمیلی") },
-                placeholder = { Text("گارانتی، نحوه شاسی‌کشی و...") },
+                placeholder = if (showPlaceholders) {
+                    { Text("گارانتی، نحوه شاسی‌کشی و...") }
+                } else null,
                 minLines = 4,
                 maxLines = 6,
                 shape = RoundedCornerShape(14.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
+                colors = appOutlinedTextFieldColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("item_description_input")

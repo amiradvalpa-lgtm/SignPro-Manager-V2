@@ -22,6 +22,7 @@ import com.example.ui.components.common.PersianDateField
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnsavedChangesDialog
+import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.JalaliDate
 import java.util.UUID
@@ -168,10 +169,7 @@ fun PaymentEditDialog(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
                     isError = customerError != null,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -227,10 +225,7 @@ fun PaymentEditDialog(
                     label = { Text("روش پرداخت / دریافت") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = methodDropdownExpanded) },
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -427,10 +422,7 @@ fun CheckEditDialog(
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
                     isError = customerError != null,
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -517,10 +509,7 @@ fun CheckEditDialog(
                     label = { Text("وضعیت وصول چک") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusDropdownExpanded) },
                     shape = RoundedCornerShape(14.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor(MenuAnchorType.PrimaryNotEditable)
@@ -727,10 +716,7 @@ fun ExpenseEditDialog(
                         label = { Text("انتخاب عنوان هزینه") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryDropdownExpanded) },
                         shape = RoundedCornerShape(14.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                        ),
+                        colors = appOutlinedTextFieldColors(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryEditable)
