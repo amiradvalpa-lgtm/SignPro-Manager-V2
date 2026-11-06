@@ -41,6 +41,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -1287,6 +1288,7 @@ fun <T> AppDropdownField(
                     expanded = false
                     searchQuery = ""
                 },
+                focusable = isSearchable,
                 modifier = Modifier.background(MaterialTheme.colorScheme.surface)
             ) {
                 if (isSearchable) {
@@ -1524,6 +1526,7 @@ fun CustomerDropdownField(
                     expanded = false
                     searchQuery = ""
                 },
+                focusable = true,
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.surface)
                     .heightIn(max = 340.dp)
@@ -1598,38 +1601,46 @@ fun CustomerDropdownField(
                             text = {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     // Right side in RTL: Customer Name (Normal font, same size) + Company Name (smaller, normal font)
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        modifier = Modifier.weight(1f, fill = false)
+                                        modifier = Modifier.weight(1f)
                                     ) {
                                         Text(
                                             text = cust.name,
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Normal,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
                                         )
                                         if (cust.companyName.isNotBlank()) {
                                             Text(
                                                 text = "(${cust.companyName})",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.Normal,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.weight(1f))
+                                    Spacer(modifier = Modifier.width(8.dp))
 
                                     // Left side in RTL: Phone number with LTR formatting
                                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                                         Text(
                                             text = FormatUtils.formatPhoneNumber(cust.phone),
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary
+                                            color = MaterialTheme.colorScheme.primary,
+                                            maxLines = 1
                                         )
                                     }
                                 }
