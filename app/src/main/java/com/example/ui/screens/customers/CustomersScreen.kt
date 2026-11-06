@@ -151,7 +151,11 @@ fun CustomersScreen(
         var list = customers
         if (searchQuery.isNotBlank()) {
             val q = searchQuery.trim()
-            list = list.filter { it.name.contains(q, ignoreCase = true) || it.phone.contains(q) }
+            list = list.filter {
+                it.name.contains(q, ignoreCase = true) ||
+                        it.companyName.contains(q, ignoreCase = true) ||
+                        it.phone.contains(q)
+            }
         }
         when (selectedFilter) {
             CustomerFilterType.ALL -> list
@@ -289,6 +293,7 @@ fun CustomersScreen(
     if (showCreateDialog) {
         CustomerEditDialog(
             customer = null,
+            existingCustomers = customers,
             warnUnsavedChanges = warnUnsavedChanges,
             onDismiss = { showCreateDialog = false },
             onSave = { entity, isNew ->
@@ -302,6 +307,7 @@ fun CustomersScreen(
     selectedCustomerForEdit?.let { customer ->
         CustomerEditDialog(
             customer = customer,
+            existingCustomers = customers,
             warnUnsavedChanges = warnUnsavedChanges,
             onDismiss = { selectedCustomerForEdit = null },
             onSave = { entity, isNew ->

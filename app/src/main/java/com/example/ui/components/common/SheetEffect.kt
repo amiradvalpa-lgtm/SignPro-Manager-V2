@@ -177,6 +177,7 @@ fun SheetImplSwitcher(modifier: Modifier = Modifier) {
 internal class CustomSheetEntry {
     var title by mutableStateOf("")
     var subtitle by mutableStateOf<String?>(null)
+    var headerAction by mutableStateOf<(@Composable () -> Unit)?>(null)
     var modifier by mutableStateOf<Modifier>(Modifier)
     var isDirty by mutableStateOf(false)
     var warnUnsaved by mutableStateOf(true)
@@ -440,6 +441,7 @@ private fun CustomSheetLayer(controller: SheetEffectController, entry: CustomShe
                 SheetBodyColumn(
                     title = entry.title,
                     subtitle = entry.subtitle,
+                    headerAction = entry.headerAction,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     entry.content(this)

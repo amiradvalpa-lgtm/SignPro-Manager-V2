@@ -20,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,9 +30,11 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
@@ -40,6 +44,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.example.data.local.entities.CustomerEntity
 import com.example.ui.components.pickers.PersianDatePickerModal
 import com.example.util.FormatUtils
 import com.example.util.JalaliDate
@@ -714,11 +719,18 @@ fun PersianDateField(
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
-            trailingIcon = {
+            leadingIcon = {
                 Icon(
                     Icons.Default.CalendarToday,
                     contentDescription = "انتخاب تاریخ",
                     tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            trailingIcon = {
+                Icon(
+                    Icons.Default.ArrowDropDown,
+                    contentDescription = "باز کردن تقویم",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             shape = RoundedCornerShape(14.dp),
@@ -1202,6 +1214,7 @@ fun <T> AppDropdownField(
     onOptionSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
     optionLabel: (T) -> String = { it.toString() },
+    optionIcon: ((T) -> ImageVector?)? = null,
     isSearchable: Boolean = false,
     searchPlaceholder: String = "جستجو...",
     searchMatcher: ((T, String) -> Boolean)? = null,
@@ -1215,6 +1228,8 @@ fun <T> AppDropdownField(
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val showPlaceholders = LocalShowPlaceholders.current
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     val filteredOptions = remember(options, searchQuery, isSearchable) {
         if (!isSearchable || searchQuery.isBlank()) {
@@ -1228,6 +1243,14 @@ fun <T> AppDropdownField(
                     optionLabel(opt).lowercase().contains(q)
                 }
             }
+        }
+    }
+
+    LaunchedEffect(expanded) {
+        if (expanded && isSearchable) {
+            kotlinx.coroutines.delay(120)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
         }
     }
 
@@ -1306,8 +1329,10 @@ fun <T> AppDropdownField(
                             focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                             unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         modifier = Modifier
                             .fillMaxWidth()
+                            .focusRequester(searchFocusRequester)
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                     HorizontalDivider(
@@ -1330,8 +1355,19 @@ fun <T> AppDropdownField(
                     )
                 } else {
                     filteredOptions.forEach { opt ->
+                        val itemIcon = optionIcon?.invoke(opt)
                         DropdownMenuItem(
                             text = { Text(optionLabel(opt), style = MaterialTheme.typography.bodyMedium) },
+                            leadingIcon = if (itemIcon != null) {
+                                {
+                                    Icon(
+                                        imageVector = itemIcon,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            } else null,
                             onClick = {
                                 onOptionSelected(opt)
                                 expanded = false
@@ -1355,7 +1391,7 @@ fun <T> AppDropdownField(
 }
 
 /**
- * نسخه اختصاصی AppDropdownField برای لیست‌های ساده متنی (String)
+ * نسخه اختصاصی AppDropdownField برای لیست‌های ساده متنی (String) با پشتیبانی از آیکون
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1366,6 +1402,7 @@ fun AppDropdownField(
     options: List<String>,
     onOptionSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
+    optionIcon: ((String) -> ImageVector?)? = null,
     isSearchable: Boolean = false,
     searchPlaceholder: String = "جستجو...",
     isEditable: Boolean = false,
@@ -1381,6 +1418,7 @@ fun AppDropdownField(
         label = label,
         options = options,
         optionLabel = { it },
+        optionIcon = optionIcon,
         onOptionSelected = onOptionSelected,
         modifier = modifier,
         isSearchable = isSearchable,
@@ -1393,6 +1431,229 @@ fun AppDropdownField(
         errorMessage = errorMessage,
         testTag = testTag
     )
+}
+
+/**
+ * کنترل اختصاصی انتخاب مشتریان با پشتیبانی از جستجو، چیدمان متوازن
+ * (نام در راست، نام مجموعه با سایز کوچک‌تر و فونت معمولی، شماره در چپ)
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomerDropdownField(
+    selectedCustomerId: String,
+    customers: List<CustomerEntity>,
+    onCustomerSelected: (CustomerEntity) -> Unit,
+    label: String = "مشتری یا کارفرمای مرتبط",
+    placeholder: String = "انتخاب مشتری",
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    modifier: Modifier = Modifier,
+    testTag: String = "customer_dropdown"
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val showPlaceholders = LocalShowPlaceholders.current
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val selectedCustomer = remember(customers, selectedCustomerId) {
+        customers.firstOrNull { it.id == selectedCustomerId }
+    }
+
+    val displayValue = remember(selectedCustomer) {
+        if (selectedCustomer == null) ""
+        else if (selectedCustomer.companyName.isNotBlank()) "${selectedCustomer.name} (${selectedCustomer.companyName})"
+        else selectedCustomer.name
+    }
+
+    val filteredCustomers = remember(customers, searchQuery) {
+        if (searchQuery.isBlank()) {
+            customers
+        } else {
+            val q = searchQuery.trim().lowercase()
+            customers.filter { cust ->
+                cust.name.lowercase().contains(q) ||
+                        cust.companyName.lowercase().contains(q) ||
+                        cust.phone.contains(q)
+            }
+        }
+    }
+
+    LaunchedEffect(expanded) {
+        if (expanded) {
+            kotlinx.coroutines.delay(120)
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = displayValue,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text(label) },
+                placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
+                    { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)) }
+                } else null,
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                isError = isError,
+                shape = RoundedCornerShape(14.dp),
+                colors = appOutlinedTextFieldColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .testTag(testTag)
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                    searchQuery = ""
+                },
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.surface)
+                    .heightIn(max = 340.dp)
+            ) {
+                // Search box with auto-focus
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = {
+                        Text(
+                            "جستجوی نام، نام مجموعه یا تلفن...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    trailingIcon = if (searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(
+                                onClick = { searchQuery = "" },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Clear,
+                                    contentDescription = "پاک کردن",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    } else null,
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(searchFocusRequester)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                )
+
+                if (filteredCustomers.isEmpty()) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "مشتری با این مشخصات یافت نشد",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = {},
+                        enabled = false
+                    )
+                } else {
+                    filteredCustomers.forEach { cust ->
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Right side in RTL: Customer Name (Normal font, same size) + Company Name (smaller, normal font)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    ) {
+                                        Text(
+                                            text = cust.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Normal,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (cust.companyName.isNotBlank()) {
+                                            Text(
+                                                text = "(${cust.companyName})",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                fontWeight = FontWeight.Normal,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    // Left side in RTL: Phone number with LTR formatting
+                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                                        Text(
+                                            text = FormatUtils.formatPhoneNumber(cust.phone),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            },
+                            onClick = {
+                                onCustomerSelected(cust)
+                                expanded = false
+                                searchQuery = ""
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = isError && !errorMessage.isNullOrBlank()) {
+            Text(
+                text = errorMessage ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
+    }
 }
 
 /**
@@ -1431,6 +1692,7 @@ fun UnitSelectorDropdown(
 fun AppFormBottomSheet(
     title: String,
     subtitle: String? = null,
+    headerAction: (@Composable () -> Unit)? = null,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     isDirty: Boolean = false,
@@ -1443,12 +1705,13 @@ fun AppFormBottomSheet(
     val impl = remember { SheetEffectConfig.impl }
 
     when {
-        isInspection -> PreviewSheet(title, subtitle, modifier, content)
+        isInspection -> PreviewSheet(title, subtitle, headerAction, modifier, content)
 
         controller != null && impl == SheetImpl.CUSTOM -> CustomSheetPortal(
             controller = controller,
             title = title,
             subtitle = subtitle,
+            headerAction = headerAction,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
             isDirty = isDirty,
@@ -1461,6 +1724,7 @@ fun AppFormBottomSheet(
             controller = controller,
             title = title,
             subtitle = subtitle,
+            headerAction = headerAction,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
             isDirty = isDirty,
@@ -1494,14 +1758,19 @@ internal fun SheetHandle(modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun SheetHeader(title: String, subtitle: String?) {
+internal fun SheetHeader(
+    title: String,
+    subtitle: String?,
+    headerAction: (@Composable () -> Unit)? = null
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.weight(1f, fill = false)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
@@ -1516,6 +1785,9 @@ internal fun SheetHeader(title: String, subtitle: String?) {
                 )
             }
         }
+        if (headerAction != null) {
+            headerAction()
+        }
     }
 }
 
@@ -1523,11 +1795,12 @@ internal fun SheetHeader(title: String, subtitle: String?) {
 internal fun SheetBodyColumn(
     title: String,
     subtitle: String?,
+    headerAction: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(modifier = modifier) {
-        SheetHeader(title, subtitle)
+        SheetHeader(title, subtitle, headerAction)
         HorizontalDivider(
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
             modifier = Modifier.padding(bottom = 8.dp)
@@ -1544,6 +1817,7 @@ internal fun SheetBodyColumn(
 private fun PreviewSheet(
     title: String,
     subtitle: String?,
+    headerAction: (@Composable () -> Unit)?,
     modifier: Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -1558,7 +1832,7 @@ private fun PreviewSheet(
                 .padding(vertical = 4.dp)
         ) {
             SheetHandle()
-            SheetBodyColumn(title, subtitle, content = content)
+            SheetBodyColumn(title, subtitle, headerAction, content = content)
         }
     }
 }
@@ -1572,6 +1846,7 @@ private fun CustomSheetPortal(
     controller: SheetEffectController,
     title: String,
     subtitle: String?,
+    headerAction: (@Composable () -> Unit)?,
     onDismissRequest: () -> Unit,
     modifier: Modifier,
     isDirty: Boolean,
@@ -1585,6 +1860,7 @@ private fun CustomSheetPortal(
     SideEffect {
         entry.title = title
         entry.subtitle = subtitle
+        entry.headerAction = headerAction
         entry.modifier = modifier
         entry.isDirty = isDirty
         entry.warnUnsaved = warnUnsavedChanges
@@ -1614,6 +1890,7 @@ private fun DialogSheet(
     controller: SheetEffectController?,
     title: String,
     subtitle: String?,
+    headerAction: (@Composable () -> Unit)?,
     onDismissRequest: () -> Unit,
     modifier: Modifier,
     isDirty: Boolean,
@@ -1723,6 +2000,7 @@ private fun DialogSheet(
         SheetBodyColumn(
             title = title,
             subtitle = subtitle,
+            headerAction = headerAction,
             modifier = Modifier
                 .onSizeChanged { contentHeightPx = it.height.toFloat() }
                 .fillMaxWidth()

@@ -14,6 +14,7 @@ data class CustomerEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val name: String,
     val phone: String,
+    val companyName: String = "",
     val address: String = "",
     val nationalCode: String = "",
     val description: String = "",

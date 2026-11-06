@@ -18,6 +18,7 @@ import com.example.data.local.entities.CustomerEntity
 import com.example.data.local.entities.ProjectEntity
 import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
+import com.example.ui.components.common.CustomerDropdownField
 import com.example.ui.components.common.PersianDateField
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
@@ -131,25 +132,17 @@ fun ProjectEditDialog(
             )
 
             // Customer Selection Dropdown with Search
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
-            AppDropdownField(
-                value = selectedCustomerName,
-                label = "مشتری یا کارفرمای مرتبط",
-                options = customers,
-                optionLabel = { "${it.name} (${it.phone})" },
-                onOptionSelected = { cust ->
+            CustomerDropdownField(
+                selectedCustomerId = selectedCustomerId,
+                customers = customers,
+                onCustomerSelected = { cust ->
                     selectedCustomerId = cust.id
                     customerError = null
                 },
-                isSearchable = true,
-                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
-                searchMatcher = { cust, query ->
-                    cust.name.lowercase().contains(query) || cust.phone.contains(query)
-                },
-                leadingIcon = Icons.Default.Person,
+                label = "مشتری یا کارفرمای مرتبط",
+                placeholder = "انتخاب مشتری",
                 isError = customerError != null,
                 errorMessage = customerError,
-                placeholder = "انتخاب مشتری",
                 testTag = "project_customer_dropdown"
             )
 

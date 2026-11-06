@@ -271,6 +271,7 @@ fun AppNavigation(viewModel: SignageViewModel) {
     if (showQuickCustomerDialog) {
         CustomerEditDialog(
             customer = null,
+            existingCustomers = customers,
             warnUnsavedChanges = warnUnsaved,
             onDismiss = { showQuickCustomerDialog = false },
             onSave = { entity, isNew ->

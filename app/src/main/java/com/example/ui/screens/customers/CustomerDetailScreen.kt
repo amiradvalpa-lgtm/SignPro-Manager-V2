@@ -39,6 +39,7 @@ fun CustomerDetailScreen(
     val checks by viewModel.repository.getChecksForCustomer(customerId).collectAsState(initial = emptyList())
     val contracts by viewModel.repository.getContractsForCustomer(customerId).collectAsState(initial = emptyList())
     val summary by viewModel.getCustomerFinancialSummary(customerId).collectAsState(initial = null)
+    val allCustomers by viewModel.customers.collectAsState()
     val currencyUnit by viewModel.currencyUnit.collectAsState()
     val warnUnsaved by viewModel.warnUnsavedChanges.collectAsState()
 
@@ -216,6 +217,7 @@ fun CustomerDetailScreen(
     if (showEditDialog && customer != null) {
         CustomerEditDialog(
             customer = customer,
+            existingCustomers = allCustomers,
             warnUnsavedChanges = warnUnsaved,
             onDismiss = { showEditDialog = false },
             onSave = { entity, isNew ->

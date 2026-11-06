@@ -6,11 +6,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Payment
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PointOfSale
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,6 +27,7 @@ import com.example.data.local.entities.*
 import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.CurrencyInputField
+import com.example.ui.components.common.CustomerDropdownField
 import com.example.ui.components.common.PersianDateField
 import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
@@ -27,6 +36,17 @@ import com.example.ui.components.common.appOutlinedTextFieldColors
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.JalaliDate
 import java.util.UUID
+
+private fun getPaymentMethodIcon(method: String): ImageVector {
+    return when (method) {
+        "کارت به کارت" -> Icons.Default.CreditCard
+        "دستگاه پوز (POS)" -> Icons.Default.PointOfSale
+        "نقدی" -> Icons.Default.Payments
+        "حواله پایا / ساتنا" -> Icons.Default.AccountBalance
+        "چک بانکی" -> Icons.Default.ReceiptLong
+        else -> Icons.Default.Payment
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,25 +174,17 @@ fun PaymentEditDialog(
             }
 
             // Customer selection with Search
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
-            AppDropdownField(
-                value = selectedCustomerName,
-                label = "مشتری مرتبط",
-                options = customers,
-                optionLabel = { "${it.name} (${it.phone})" },
-                onOptionSelected = { cust ->
+            CustomerDropdownField(
+                selectedCustomerId = selectedCustomerId,
+                customers = customers,
+                onCustomerSelected = { cust ->
                     selectedCustomerId = cust.id
                     customerError = null
                 },
-                isSearchable = true,
-                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
-                searchMatcher = { cust, query ->
-                    cust.name.lowercase().contains(query) || cust.phone.contains(query)
-                },
-                leadingIcon = Icons.Default.Person,
+                label = "مشتری مرتبط",
+                placeholder = "انتخاب مشتری",
                 isError = customerError != null,
                 errorMessage = customerError,
-                placeholder = "انتخاب مشتری",
                 testTag = "payment_customer_dropdown"
             )
 
@@ -195,11 +207,13 @@ fun PaymentEditDialog(
                 label = "تاریخ تراکنش"
             )
 
-            // Method
+            // Method with Icons
             AppDropdownField(
                 value = method,
                 label = "روش پرداخت / دریافت",
                 options = methodOptions,
+                optionIcon = { getPaymentMethodIcon(it) },
+                leadingIcon = getPaymentMethodIcon(method),
                 onOptionSelected = { method = it },
                 testTag = "payment_method_dropdown"
             )
@@ -364,23 +378,17 @@ fun CheckEditDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Customer selection with Search
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
-            AppDropdownField(
-                value = selectedCustomerName,
-                label = "مشتری صادرکننده چک",
-                options = customers,
-                optionLabel = { "${it.name} (${it.phone})" },
-                onOptionSelected = { cust ->
+            CustomerDropdownField(
+                selectedCustomerId = selectedCustomerId,
+                customers = customers,
+                onCustomerSelected = { cust ->
                     selectedCustomerId = cust.id
                     customerError = null
                 },
-                isSearchable = true,
-                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
-                searchMatcher = { cust, q -> cust.name.lowercase().contains(q) || cust.phone.contains(q) },
-                leadingIcon = Icons.Default.Person,
+                label = "مشتری صادرکننده چک",
+                placeholder = "انتخاب مشتری",
                 isError = customerError != null,
                 errorMessage = customerError,
-                placeholder = "انتخاب مشتری",
                 testTag = "check_customer_dropdown"
             )
 

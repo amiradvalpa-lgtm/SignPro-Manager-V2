@@ -102,4 +102,85 @@ object CallLogHelper {
         val jalali = JalaliDate.fromMillis(timestamp)
         return FormatUtils.toPersianDigits(jalali.formatShort())
     }
+
+    /**
+     * Formats timestamp into a localized Persian Jalali date and time string (e.g. ۱۴۰۴/۰۵/۲۴ - ۱۶:۴۵).
+     */
+    fun formatCallDateTime(timestamp: Long?): String {
+        if (timestamp == null || timestamp <= 0L) return ""
+        val jalali = JalaliDate.fromMillis(timestamp)
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
+        val hour = String.format(java.util.Locale.US, "%02d", cal.get(java.util.Calendar.HOUR_OF_DAY))
+        val min = String.format(java.util.Locale.US, "%02d", cal.get(java.util.Calendar.MINUTE))
+        return FormatUtils.toPersianDigits("${jalali.formatShort()} - $hour:$min")
+    }
+
+    /**
+     * Retrieves recent call history sorted by date DESC (newest at the top).
+     */
+    fun getRecentCallLogs(context: Context, limit: Int = 150): List<CallLogEntry> {
+        if (!hasCallLogPermission(context)) return emptyList()
+
+        val list = mutableListOf<CallLogEntry>()
+        val projection = arrayOf(
+            CallLog.Calls._ID,
+            CallLog.Calls.CACHED_NAME,
+            CallLog.Calls.NUMBER,
+            CallLog.Calls.DATE,
+            CallLog.Calls.TYPE,
+            CallLog.Calls.DURATION
+        )
+        val sortOrder = "${CallLog.Calls.DATE} DESC"
+
+        try {
+            context.contentResolver.query(
+                CallLog.Calls.CONTENT_URI,
+                projection,
+                null,
+                null,
+                sortOrder
+            )?.use { cursor ->
+                val idIdx = cursor.getColumnIndex(CallLog.Calls._ID)
+                val nameIdx = cursor.getColumnIndex(CallLog.Calls.CACHED_NAME)
+                val numIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER)
+                val dateIdx = cursor.getColumnIndex(CallLog.Calls.DATE)
+                val typeIdx = cursor.getColumnIndex(CallLog.Calls.TYPE)
+                val durIdx = cursor.getColumnIndex(CallLog.Calls.DURATION)
+
+                while (cursor.moveToNext() && list.size < limit) {
+                    val id = if (idIdx >= 0) cursor.getString(idIdx) ?: "" else ""
+                    val rawName = if (nameIdx >= 0) cursor.getString(nameIdx) else null
+                    val rawNum = if (numIdx >= 0) cursor.getString(numIdx) ?: "" else ""
+                    val date = if (dateIdx >= 0) cursor.getLong(dateIdx) else 0L
+                    val type = if (typeIdx >= 0) cursor.getInt(typeIdx) else CallLog.Calls.INCOMING_TYPE
+                    val dur = if (durIdx >= 0) cursor.getLong(durIdx) else 0L
+
+                    if (rawNum.isNotBlank()) {
+                        list.add(
+                            CallLogEntry(
+                                id = id.ifBlank { "${date}_${rawNum}" },
+                                name = rawName?.takeIf { it.isNotBlank() },
+                                number = rawNum,
+                                timestamp = date,
+                                type = type,
+                                durationSeconds = dur
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CallLogHelper", "getRecentCallLogs failed", e)
+        }
+        return list
+    }
 }
+
+data class CallLogEntry(
+    val id: String,
+    val name: String?,
+    val number: String,
+    val timestamp: Long,
+    val type: Int,
+    val durationSeconds: Long = 0L
+)

@@ -23,7 +23,8 @@ object SampleDataGenerator {
         // 1. Customers
         val customer1 = CustomerEntity(
             id = "sample_cust_1",
-            name = "طلا و جواهر رحمانی (الماس)",
+            name = "حاج محسن رحمانی",
+            companyName = "طلا و جواهر الماس",
             phone = "09121112233",
             address = "بازار بزرگ تهران، سرای زرگران، پلاک ۱۴",
             nationalCode = "0012345678",
@@ -32,7 +33,8 @@ object SampleDataGenerator {
         )
         val customer2 = CustomerEntity(
             id = "sample_cust_2",
-            name = "مجتمع تجاری و پزشکی نیایش",
+            name = "مهندس صادقی",
+            companyName = "برج نیایش",
             phone = "09123456789",
             address = "بلوار شهید بهشتی، نرسیده به میدان شهدا، برج نیایش",
             nationalCode = "10100456789",
@@ -41,7 +43,8 @@ object SampleDataGenerator {
         )
         val customer3 = CustomerEntity(
             id = "sample_cust_3",
-            name = "کافه رستوران زنجیره‌ای باران",
+            name = "پیمان کمالی",
+            companyName = "کافه رستوران باران",
             phone = "09358889900",
             address = "خیابان ولیعصر، نبش کوچه فرشته، پلاک ۲",
             nationalCode = "0078901234",
