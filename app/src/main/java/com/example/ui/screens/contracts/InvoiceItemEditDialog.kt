@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.InvoiceItemEntity
+import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.CurrencyInputField
 import com.example.ui.components.common.LocalShowPlaceholders
@@ -47,7 +48,6 @@ fun InvoiceItemEditDialog(
     var unitPrice by remember { mutableStateOf(item?.unitPrice ?: 0L) }
     var description by remember { mutableStateOf(item?.description ?: "") }
 
-    var serviceDropdownExpanded by remember { mutableStateOf(false) }
     var serviceTypeError by remember { mutableStateOf<String?>(null) }
     var quantityError by remember { mutableStateOf<String?>(null) }
     var unitPriceError by remember { mutableStateOf<String?>(null) }
@@ -149,44 +149,23 @@ fun InvoiceItemEditDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Service Type Dropdown
-            ExposedDropdownMenuBox(
-                expanded = serviceDropdownExpanded,
-                onExpandedChange = { serviceDropdownExpanded = !serviceDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = serviceType,
-                    onValueChange = {
-                        serviceType = it
-                        serviceTypeError = null
-                    },
-                    label = { Text("نوع خدمت یا کالا") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = serviceDropdownExpanded) },
-                    isError = serviceTypeError != null,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = serviceDropdownExpanded,
-                    onDismissRequest = { serviceDropdownExpanded = false }
-                ) {
-                    servicePresets.forEach { preset ->
-                        DropdownMenuItem(
-                            text = { Text(preset) },
-                            onClick = {
-                                serviceType = preset
-                                serviceTypeError = null
-                                serviceDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            if (serviceTypeError != null) {
-                Text(text = serviceTypeError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            AppDropdownField(
+                value = serviceType,
+                onValueChange = {
+                    serviceType = it
+                    serviceTypeError = null
+                },
+                label = "نوع خدمت یا کالا",
+                options = servicePresets,
+                onOptionSelected = { preset ->
+                    serviceType = preset
+                    serviceTypeError = null
+                },
+                isEditable = true,
+                isError = serviceTypeError != null,
+                errorMessage = serviceTypeError,
+                testTag = "invoice_service_dropdown"
+            )
 
             PersianTextField(
                 value = itemDescription,

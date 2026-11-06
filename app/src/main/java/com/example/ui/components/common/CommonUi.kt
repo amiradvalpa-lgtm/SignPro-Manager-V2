@@ -1189,9 +1189,215 @@ fun CardOverflowMenu(
 }
 
 /**
- * کنترل انتخاب واحد اقلام فاکتور
+ * کامپوننت مشترک و ماژولار دراپ‌داون در سراسر برنامه (Single Source of Truth)
+ * پشتیبانی از گزینه‌های جنریک، جستجوی زنده، حالت تایپ مستقیم و استایل یکپارچه متریال ۳
  */
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun <T> AppDropdownField(
+    value: String,
+    onValueChange: (String) -> Unit = {},
+    label: String,
+    options: List<T>,
+    onOptionSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    optionLabel: (T) -> String = { it.toString() },
+    isSearchable: Boolean = false,
+    searchPlaceholder: String = "جستجو...",
+    searchMatcher: ((T, String) -> Boolean)? = null,
+    isEditable: Boolean = false,
+    leadingIcon: ImageVector? = null,
+    placeholder: String = "",
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    testTag: String = "app_dropdown_field"
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    val showPlaceholders = LocalShowPlaceholders.current
+
+    val filteredOptions = remember(options, searchQuery, isSearchable) {
+        if (!isSearchable || searchQuery.isBlank()) {
+            options
+        } else {
+            val q = searchQuery.trim().lowercase()
+            options.filter { opt ->
+                if (searchMatcher != null) {
+                    searchMatcher(opt, q)
+                } else {
+                    optionLabel(opt).lowercase().contains(q)
+                }
+            }
+        }
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                readOnly = !isEditable,
+                label = { Text(label) },
+                placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
+                    { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)) }
+                } else null,
+                leadingIcon = if (leadingIcon != null) {
+                    { Icon(leadingIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                } else null,
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                isError = isError,
+                shape = RoundedCornerShape(14.dp),
+                colors = appOutlinedTextFieldColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(if (isEditable) MenuAnchorType.PrimaryEditable else MenuAnchorType.PrimaryNotEditable)
+                    .testTag(testTag)
+            )
+
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = {
+                    expanded = false
+                    searchQuery = ""
+                },
+                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            ) {
+                if (isSearchable) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = {
+                            Text(
+                                searchPlaceholder,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
+                        trailingIcon = if (searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(
+                                    onClick = { searchQuery = "" },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = "پاک کردن",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        } else null,
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                }
+
+                if (filteredOptions.isEmpty()) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                "موردی یافت نشد",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = {},
+                        enabled = false
+                    )
+                } else {
+                    filteredOptions.forEach { opt ->
+                        DropdownMenuItem(
+                            text = { Text(optionLabel(opt), style = MaterialTheme.typography.bodyMedium) },
+                            onClick = {
+                                onOptionSelected(opt)
+                                expanded = false
+                                searchQuery = ""
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = isError && !errorMessage.isNullOrBlank()) {
+            Text(
+                text = errorMessage ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            )
+        }
+    }
+}
+
+/**
+ * نسخه اختصاصی AppDropdownField برای لیست‌های ساده متنی (String)
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppDropdownField(
+    value: String,
+    onValueChange: (String) -> Unit = {},
+    label: String,
+    options: List<String>,
+    onOptionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    isSearchable: Boolean = false,
+    searchPlaceholder: String = "جستجو...",
+    isEditable: Boolean = false,
+    leadingIcon: ImageVector? = null,
+    placeholder: String = "",
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    testTag: String = "app_dropdown_field"
+) {
+    AppDropdownField(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        options = options,
+        optionLabel = { it },
+        onOptionSelected = onOptionSelected,
+        modifier = modifier,
+        isSearchable = isSearchable,
+        searchPlaceholder = searchPlaceholder,
+        searchMatcher = null,
+        isEditable = isEditable,
+        leadingIcon = leadingIcon,
+        placeholder = placeholder,
+        isError = isError,
+        errorMessage = errorMessage,
+        testTag = testTag
+    )
+}
+
+/**
+ * کنترل انتخاب واحد اقلام فاکتور با استفاده از کامپوننت مشترک AppDropdownField
+ */
 @Composable
 fun UnitSelectorDropdown(
     selectedUnit: String,
@@ -1199,40 +1405,14 @@ fun UnitSelectorDropdown(
     modifier: Modifier = Modifier
 ) {
     val units = listOf("عدد", "متر", "سانتی‌متر", "متر مربع", "کیلوگرم")
-    var expanded by remember { mutableStateOf(false) }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = modifier
-    ) {
-        OutlinedTextField(
-            value = selectedUnit,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("واحد") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            shape = RoundedCornerShape(14.dp),
-            colors = appOutlinedTextFieldColors(),
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth()
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            units.forEach { unit ->
-                DropdownMenuItem(
-                    text = { Text(unit) },
-                    onClick = {
-                        onUnitSelected(unit)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
+    AppDropdownField(
+        value = selectedUnit,
+        label = "واحد",
+        options = units,
+        onOptionSelected = onUnitSelected,
+        modifier = modifier,
+        testTag = "unit_selector_dropdown"
+    )
 }
 
 

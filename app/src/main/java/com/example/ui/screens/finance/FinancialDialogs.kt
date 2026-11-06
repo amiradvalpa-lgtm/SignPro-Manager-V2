@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.*
+import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.CurrencyInputField
 import com.example.ui.components.common.PersianDateField
@@ -52,8 +53,6 @@ fun PaymentEditDialog(
     var trackingCode by remember { mutableStateOf(payment?.trackingCode ?: "") }
     var description by remember { mutableStateOf(payment?.description ?: "") }
 
-    var customerDropdownExpanded by remember { mutableStateOf(false) }
-    var methodDropdownExpanded by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf<String?>(null) }
     var customerError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
@@ -154,45 +153,28 @@ fun PaymentEditDialog(
                 }
             }
 
-            // Customer selection
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: "انتخاب مشتری"
-            ExposedDropdownMenuBox(
-                expanded = customerDropdownExpanded,
-                onExpandedChange = { customerDropdownExpanded = !customerDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedCustomerName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("مشتری مرتبط") },
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
-                    isError = customerError != null,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = customerDropdownExpanded,
-                    onDismissRequest = { customerDropdownExpanded = false }
-                ) {
-                    customers.forEach { cust ->
-                        DropdownMenuItem(
-                            text = { Text("${cust.name} (${cust.phone})") },
-                            onClick = {
-                                selectedCustomerId = cust.id
-                                customerError = null
-                                customerDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            if (customerError != null) {
-                Text(text = customerError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            // Customer selection with Search
+            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
+            AppDropdownField(
+                value = selectedCustomerName,
+                label = "مشتری مرتبط",
+                options = customers,
+                optionLabel = { "${it.name} (${it.phone})" },
+                onOptionSelected = { cust ->
+                    selectedCustomerId = cust.id
+                    customerError = null
+                },
+                isSearchable = true,
+                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
+                searchMatcher = { cust, query ->
+                    cust.name.lowercase().contains(query) || cust.phone.contains(query)
+                },
+                leadingIcon = Icons.Default.Person,
+                isError = customerError != null,
+                errorMessage = customerError,
+                placeholder = "انتخاب مشتری",
+                testTag = "payment_customer_dropdown"
+            )
 
             CurrencyInputField(
                 amount = amount,
@@ -214,37 +196,13 @@ fun PaymentEditDialog(
             )
 
             // Method
-            ExposedDropdownMenuBox(
-                expanded = methodDropdownExpanded,
-                onExpandedChange = { methodDropdownExpanded = !methodDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = method,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("روش پرداخت / دریافت") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = methodDropdownExpanded) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = methodDropdownExpanded,
-                    onDismissRequest = { methodDropdownExpanded = false }
-                ) {
-                    methodOptions.forEach { opt ->
-                        DropdownMenuItem(
-                            text = { Text(opt) },
-                            onClick = {
-                                method = opt
-                                methodDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            AppDropdownField(
+                value = method,
+                label = "روش پرداخت / دریافت",
+                options = methodOptions,
+                onOptionSelected = { method = it },
+                testTag = "payment_method_dropdown"
+            )
 
             PersianTextField(
                 value = trackingCode,
@@ -316,8 +274,6 @@ fun CheckEditDialog(
     var status by remember { mutableStateOf(check?.status ?: "PENDING") } // PENDING, CLEARED, BOUNCED, RETURNED
     var description by remember { mutableStateOf(check?.description ?: "") }
 
-    var customerDropdownExpanded by remember { mutableStateOf(false) }
-    var statusDropdownExpanded by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf<String?>(null) }
     var customerError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
@@ -407,45 +363,26 @@ fun CheckEditDialog(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Customer selection
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: "انتخاب مشتری"
-            ExposedDropdownMenuBox(
-                expanded = customerDropdownExpanded,
-                onExpandedChange = { customerDropdownExpanded = !customerDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedCustomerName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("مشتری صادرکننده چک") },
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
-                    isError = customerError != null,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = customerDropdownExpanded,
-                    onDismissRequest = { customerDropdownExpanded = false }
-                ) {
-                    customers.forEach { cust ->
-                        DropdownMenuItem(
-                            text = { Text("${cust.name} (${cust.phone})") },
-                            onClick = {
-                                selectedCustomerId = cust.id
-                                customerError = null
-                                customerDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            if (customerError != null) {
-                Text(text = customerError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            // Customer selection with Search
+            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
+            AppDropdownField(
+                value = selectedCustomerName,
+                label = "مشتری صادرکننده چک",
+                options = customers,
+                optionLabel = { "${it.name} (${it.phone})" },
+                onOptionSelected = { cust ->
+                    selectedCustomerId = cust.id
+                    customerError = null
+                },
+                isSearchable = true,
+                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
+                searchMatcher = { cust, q -> cust.name.lowercase().contains(q) || cust.phone.contains(q) },
+                leadingIcon = Icons.Default.Person,
+                isError = customerError != null,
+                errorMessage = customerError,
+                placeholder = "انتخاب مشتری",
+                testTag = "check_customer_dropdown"
+            )
 
             CurrencyInputField(
                 amount = amount,
@@ -498,37 +435,14 @@ fun CheckEditDialog(
 
             // Status dropdown
             val statusLabel = statusOptions.firstOrNull { it.first == status }?.second ?: "در جریان وصول"
-            ExposedDropdownMenuBox(
-                expanded = statusDropdownExpanded,
-                onExpandedChange = { statusDropdownExpanded = !statusDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = statusLabel,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("وضعیت وصول چک") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusDropdownExpanded) },
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = statusDropdownExpanded,
-                    onDismissRequest = { statusDropdownExpanded = false }
-                ) {
-                    statusOptions.forEach { opt ->
-                        DropdownMenuItem(
-                            text = { Text(opt.second) },
-                            onClick = {
-                                status = opt.first
-                                statusDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            AppDropdownField(
+                value = statusLabel,
+                label = "وضعیت وصول چک",
+                options = statusOptions,
+                optionLabel = { it.second },
+                onOptionSelected = { status = it.first },
+                testTag = "check_status_dropdown"
+            )
 
             PersianTextField(
                 value = description,
@@ -586,8 +500,6 @@ fun ExpenseEditDialog(
     var date by remember { mutableStateOf(expense?.date ?: JalaliDate.today().formatShort()) }
     var invoiceId by remember { mutableStateOf(expense?.invoiceId) }
     var description by remember { mutableStateOf(expense?.description ?: "") }
-
-    var categoryDropdownExpanded by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf<String?>(null) }
     var categoryError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
@@ -703,43 +615,27 @@ fun ExpenseEditDialog(
                     }
                 }
             } else {
-                ExposedDropdownMenuBox(
-                    expanded = categoryDropdownExpanded,
-                    onExpandedChange = { categoryDropdownExpanded = !categoryDropdownExpanded }
-                ) {
-                    OutlinedTextField(
-                        value = category,
-                        onValueChange = {
-                            category = it
-                            categoryError = null
-                        },
-                        label = { Text("انتخاب عنوان هزینه") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryDropdownExpanded) },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = appOutlinedTextFieldColors(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryEditable)
-                    )
-                    ExposedDropdownMenu(
-                        expanded = categoryDropdownExpanded,
-                        onDismissRequest = { categoryDropdownExpanded = false }
-                    ) {
-                        categories.forEach { cat ->
-                            DropdownMenuItem(
-                                text = { Text(cat.title) },
-                                onClick = {
-                                    category = cat.title
-                                    if (amount == 0L && cat.defaultAmount > 0) {
-                                        amount = cat.defaultAmount
-                                    }
-                                    categoryError = null
-                                    categoryDropdownExpanded = false
-                                }
-                            )
+                AppDropdownField(
+                    value = category,
+                    onValueChange = {
+                        category = it
+                        categoryError = null
+                    },
+                    label = "انتخاب عنوان هزینه",
+                    options = categories,
+                    optionLabel = { it.title },
+                    onOptionSelected = { cat ->
+                        category = cat.title
+                        if (amount == 0L && cat.defaultAmount > 0) {
+                            amount = cat.defaultAmount
                         }
-                    }
-                }
+                        categoryError = null
+                    },
+                    isEditable = true,
+                    isError = categoryError != null,
+                    errorMessage = categoryError,
+                    testTag = "expense_category_dropdown"
+                )
             }
 
             CurrencyInputField(

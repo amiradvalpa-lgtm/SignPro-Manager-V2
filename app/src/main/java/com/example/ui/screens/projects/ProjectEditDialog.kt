@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.data.local.entities.CustomerEntity
 import com.example.data.local.entities.ProjectEntity
+import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.PersianDateField
 import com.example.ui.components.common.PersianTextField
@@ -49,7 +50,6 @@ fun ProjectEditDialog(
 
     var titleError by remember { mutableStateOf<String?>(null) }
     var customerError by remember { mutableStateOf<String?>(null) }
-    var customerDropdownExpanded by remember { mutableStateOf(false) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
 
     val isDirty = remember(title, selectedCustomerId, startDate, description) {
@@ -130,50 +130,28 @@ fun ProjectEditDialog(
                 testTag = "project_title_input"
             )
 
-            // Customer Selection Dropdown
-            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: "انتخاب مشتری"
-            ExposedDropdownMenuBox(
-                expanded = customerDropdownExpanded,
-                onExpandedChange = { customerDropdownExpanded = !customerDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedCustomerName,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("مشتری یا کارفرمای مرتبط") },
-                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerDropdownExpanded) },
-                    isError = customerError != null,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = customerDropdownExpanded,
-                    onDismissRequest = { customerDropdownExpanded = false }
-                ) {
-                    customers.forEach { cust ->
-                        DropdownMenuItem(
-                            text = { Text("${cust.name} (${cust.phone})") },
-                            onClick = {
-                                selectedCustomerId = cust.id
-                                customerError = null
-                                customerDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            if (customerError != null) {
-                Text(
-                    text = customerError ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
-            }
+            // Customer Selection Dropdown with Search
+            val selectedCustomerName = customers.firstOrNull { it.id == selectedCustomerId }?.name ?: ""
+            AppDropdownField(
+                value = selectedCustomerName,
+                label = "مشتری یا کارفرمای مرتبط",
+                options = customers,
+                optionLabel = { "${it.name} (${it.phone})" },
+                onOptionSelected = { cust ->
+                    selectedCustomerId = cust.id
+                    customerError = null
+                },
+                isSearchable = true,
+                searchPlaceholder = "جستجوی نام یا تلفن مشتری...",
+                searchMatcher = { cust, query ->
+                    cust.name.lowercase().contains(query) || cust.phone.contains(query)
+                },
+                leadingIcon = Icons.Default.Person,
+                isError = customerError != null,
+                errorMessage = customerError,
+                placeholder = "انتخاب مشتری",
+                testTag = "project_customer_dropdown"
+            )
 
             // Start Date
             PersianDateField(

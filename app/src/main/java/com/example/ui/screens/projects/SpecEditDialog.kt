@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.data.local.entities.ProjectSpecEntity
+import com.example.ui.components.common.AppDropdownField
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.LocalShowPlaceholders
 import com.example.ui.components.common.PersianTextField
@@ -70,8 +71,6 @@ fun SpecEditDialog(
     var lengthError by remember { mutableStateOf<String?>(null) }
     var widthError by remember { mutableStateOf<String?>(null) }
     var depthError by remember { mutableStateOf<String?>(null) }
-
-    var signTypeDropdownExpanded by remember { mutableStateOf(false) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
 
     val signTypePresets = listOf(
@@ -225,44 +224,23 @@ fun SpecEditDialog(
             )
 
             // Sign Type Dropdown
-            ExposedDropdownMenuBox(
-                expanded = signTypeDropdownExpanded,
-                onExpandedChange = { signTypeDropdownExpanded = !signTypeDropdownExpanded }
-            ) {
-                OutlinedTextField(
-                    value = signType,
-                    onValueChange = {
-                        signType = it
-                        signTypeError = null
-                    },
-                    label = { Text("نوع تابلو و متریال") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = signTypeDropdownExpanded) },
-                    isError = signTypeError != null,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = appOutlinedTextFieldColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = signTypeDropdownExpanded,
-                    onDismissRequest = { signTypeDropdownExpanded = false }
-                ) {
-                    signTypePresets.forEach { preset ->
-                        DropdownMenuItem(
-                            text = { Text(preset) },
-                            onClick = {
-                                signType = preset
-                                signTypeError = null
-                                signTypeDropdownExpanded = false
-                            }
-                        )
-                    }
-                }
-            }
-            if (signTypeError != null) {
-                Text(text = signTypeError ?: "", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
+            AppDropdownField(
+                value = signType,
+                onValueChange = {
+                    signType = it
+                    signTypeError = null
+                },
+                label = "نوع تابلو و متریال",
+                options = signTypePresets,
+                onOptionSelected = { preset ->
+                    signType = preset
+                    signTypeError = null
+                },
+                isEditable = true,
+                isError = signTypeError != null,
+                errorMessage = signTypeError,
+                testTag = "spec_signtype_dropdown"
+            )
 
             // Dimensions in 3 separate rows with fixed "سانتی‌متر" suffix
             Text(
