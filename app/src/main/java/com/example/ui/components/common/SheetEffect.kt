@@ -29,8 +29,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -198,9 +200,12 @@ class SheetEffectController internal constructor(private val scope: CoroutineSco
     private var tail by mutableFloatStateOf(0f)
     private var tailJob: Job? = null
 
-    // ---- روش ۲ ----
-    internal var customEntry by mutableStateOf<CustomSheetEntry?>(null)
-        private set
+    // ---- روش ۲ (پشته شیت‌ها برای پشتیبانی کامل از شیت‌های تو در تو) ----
+    private val sheetStack = mutableStateListOf<CustomSheetEntry>()
+
+    internal val customEntry: CustomSheetEntry?
+        get() = sheetStack.lastOrNull()
+
     internal var customProgress by mutableFloatStateOf(0f)
         private set
     internal var customHeightPx by mutableFloatStateOf(0f)
@@ -244,9 +249,20 @@ class SheetEffectController internal constructor(private val scope: CoroutineSco
     internal fun showCustom(entry: CustomSheetEntry) {
         customJob?.cancel()
         entry.closing = false
-        if (customEntry == null) customProgress = 0f
+        val wasEmpty = sheetStack.isEmpty()
+        if (!sheetStack.contains(entry)) {
+            sheetStack.add(entry)
+        } else if (sheetStack.lastOrNull() !== entry) {
+            sheetStack.remove(entry)
+            sheetStack.add(entry)
+        }
         customHeightPx = 0f
-        customEntry = entry
+        if (wasEmpty) {
+            customProgress = 0f
+        } else {
+            // شیت جدید روی شیت قبلی باز می‌شود
+            customProgress = 0f
+        }
     }
 
     internal fun animateCustom(target: Float, onDone: () -> Unit = {}) {
@@ -269,11 +285,21 @@ class SheetEffectController internal constructor(private val scope: CoroutineSco
 
     /** بستن با انیمیشن؛ اگر notify باشد بعد از پایان onDismissRequest فراخوانی می‌شود. */
     internal fun closeCustom(entry: CustomSheetEntry, notify: Boolean) {
-        if (customEntry !== entry) return
+        val isTop = sheetStack.lastOrNull() === entry
+        if (!isTop) {
+            sheetStack.remove(entry)
+            if (notify) entry.onDismissRequest()
+            return
+        }
         entry.closing = true
         animateCustom(0f) {
-            if (customEntry === entry) customEntry = null
+            sheetStack.remove(entry)
             if (notify) entry.onDismissRequest()
+            if (sheetStack.isNotEmpty()) {
+                // بازگشت روان به شیت زیرین در پشته
+                customHeightPx = 0f
+                customProgress = 1f
+            }
         }
     }
 
@@ -295,8 +321,19 @@ class SheetEffectController internal constructor(private val scope: CoroutineSco
 
     /** وقتی فرم صدا زننده (مثلاً بعد از ذخیره) شیت را از composition حذف کرد. */
     internal fun releaseCustom(entry: CustomSheetEntry) {
-        if (customEntry === entry && !entry.closing) {
-            closeCustom(entry, notify = false)
+        if (sheetStack.contains(entry)) {
+            val isTop = sheetStack.lastOrNull() === entry
+            if (isTop && !entry.closing) {
+                sheetStack.remove(entry)
+                if (sheetStack.isNotEmpty()) {
+                    customHeightPx = 0f
+                    customProgress = 1f
+                } else {
+                    customProgress = 0f
+                }
+            } else {
+                sheetStack.remove(entry)
+            }
         }
     }
 }
@@ -362,7 +399,9 @@ fun SheetEffectHost(content: @Composable () -> Unit) {
 
             // لایه ۳: شیت سفارشی (روش ۲)
             if (entry != null) {
-                CustomSheetLayer(controller, entry)
+                key(entry) {
+                    CustomSheetLayer(controller, entry)
+                }
             }
         }
     }
@@ -373,7 +412,9 @@ private fun CustomSheetLayer(controller: SheetEffectController, entry: CustomShe
     // شروع انیمیشن باز شدن بعد از اندازه‌گیری شیت
     LaunchedEffect(entry) {
         snapshotFlow { controller.customHeightPx }.first { it > 0f }
-        controller.animateCustom(1f)
+        if (controller.customProgress < 1f) {
+            controller.animateCustom(1f)
+        }
     }
 
     val nested = remember(controller, entry) {

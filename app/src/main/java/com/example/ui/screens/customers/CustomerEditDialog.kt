@@ -258,7 +258,7 @@ fun CustomerEditDialog(
             onCallSelected = { logName, logNumber ->
                 phone = FormatUtils.cleanAndNormalizePhone(logNumber)
                 phoneError = null
-                if (name.isBlank() && !logName.isNullOrBlank()) {
+                if (!logName.isNullOrBlank()) {
                     name = logName.trim()
                     nameError = null
                 }

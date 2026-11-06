@@ -4,28 +4,21 @@ import android.Manifest
 import android.provider.CallLog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.CallMade
-import androidx.compose.material.icons.automirrored.filled.CallMissed
-import androidx.compose.material.icons.automirrored.filled.CallReceived
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -34,13 +27,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.ui.components.common.AppFormBottomSheet
 import com.example.ui.components.common.StickyBottomActionBar
-import com.example.ui.theme.MoneyNegative
-import com.example.ui.theme.MoneyPositive
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.CallLogEntry
 import com.example.util.CallLogHelper
@@ -95,13 +87,17 @@ fun CallLogPickerSheet(
         }
     }
 
+    val groupedCalls = remember(filteredCalls) {
+        filteredCalls.groupBy { CallLogHelper.getCallDateKey(it.timestamp) }
+    }
+
     val selectedEntry = remember(selectedCallId, calls) {
         calls.firstOrNull { it.id == selectedCallId }
     }
 
     AppFormBottomSheet(
         title = "انتخاب از تاریخچه تماس‌ها",
-        subtitle = "جدیدترین تماس‌های گوشی بر اساس زمان (جدیدترین در بالا)",
+        subtitle = null,
         onDismissRequest = onDismiss
     ) {
         Column(
@@ -244,18 +240,73 @@ fun CallLogPickerSheet(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 380.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                            .heightIn(max = 400.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(filteredCalls, key = { it.id }) { call ->
-                            val isSelected = call.id == selectedCallId
-                            CallLogItemRow(
-                                entry = call,
-                                isSelected = isSelected,
-                                onClick = {
-                                    selectedCallId = if (isSelected) null else call.id
+                        groupedCalls.forEach { (dateKey, itemsInGroup) ->
+                            item(key = "group_$dateKey") {
+                                val groupDateLabel = CallLogHelper.formatCallGroupDate(itemsInGroup.first().timestamp)
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        // Header of date card
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CalendarToday,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = groupDateLabel,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+
+                                        HorizontalDivider(
+                                            thickness = 0.5.dp,
+                                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                                        )
+
+                                        // Items in this date group
+                                        itemsInGroup.forEachIndexed { index, call ->
+                                            if (index > 0) {
+                                                HorizontalDivider(
+                                                    thickness = 0.5.dp,
+                                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                                                    modifier = Modifier.padding(horizontal = 14.dp)
+                                                )
+                                            }
+                                            val isSelected = call.id == selectedCallId
+                                            CallLogItemRow(
+                                                entry = call,
+                                                isSelected = isSelected,
+                                                onClick = {
+                                                    selectedCallId = if (isSelected) null else call.id
+                                                }
+                                            )
+                                        }
+                                    }
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -285,109 +336,82 @@ private fun CallLogItemRow(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val (typeIcon, iconTint) = when (entry.type) {
-        CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to MoneyNegative
-        CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to MaterialTheme.colorScheme.primary
-        else -> Icons.AutoMirrored.Filled.CallReceived to MoneyPositive
+    val isNameAvailable = !entry.name.isNullOrBlank()
+    val displayName = remember(entry.name, entry.number) {
+        if (!entry.name.isNullOrBlank()) {
+            entry.name.trim()
+        } else {
+            FormatUtils.formatPhoneNumber(entry.number)
+        }
     }
-
-    val typeLabel = when (entry.type) {
-        CallLog.Calls.MISSED_TYPE -> "بی‌پاسخ"
-        CallLog.Calls.OUTGOING_TYPE -> "صادره"
-        else -> "وارده"
+    val callTime = remember(entry.timestamp) {
+        CallLogHelper.formatCallTime(entry.timestamp)
     }
 
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
         color = if (isSelected) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
         } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            Color.Transparent
         },
-        border = BorderStroke(
-            width = if (isSelected) 1.5.dp else 1.dp,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        ),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
             .testTag("call_log_item_${entry.id}")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon
-            Surface(
-                shape = CircleShape,
-                color = iconTint.copy(alpha = 0.12f),
-                modifier = Modifier.size(38.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = typeIcon,
-                        contentDescription = typeLabel,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
+            // Right in RTL: RadioButton selection
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = MaterialTheme.colorScheme.primary,
+                    unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                ),
+                modifier = Modifier.size(20.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Center: Only Name OR Number
+            if (isNameAvailable) {
+                Text(
+                    text = displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr),
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Contact Name & Date
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.name?.ifBlank { "مخاطب بدون نام" } ?: "مخاطب ناشناس",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = typeLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = iconTint,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "•",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = CallLogHelper.formatCallDateTime(entry.timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Phone Number in LTR
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                Text(
-                    text = FormatUtils.formatPhoneNumber(entry.number),
-                    style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr),
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
+            // Left in RTL (Opposite to Name/Number): Hour and Minute
+            Text(
+                text = callTime,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End
             )
         }
     }
@@ -396,7 +420,8 @@ private fun CallLogItemRow(
 private fun samplePreviewCalls() = listOf(
     CallLogEntry("1", "مهندس اکبری", "09121112233", System.currentTimeMillis() - 1000 * 60 * 30, CallLog.Calls.INCOMING_TYPE),
     CallLogEntry("2", "فروشگاه الماس", "09145556677", System.currentTimeMillis() - 1000 * 60 * 180, CallLog.Calls.OUTGOING_TYPE),
-    CallLogEntry("3", null, "09359998877", System.currentTimeMillis() - 1000 * 60 * 60 * 12, CallLog.Calls.MISSED_TYPE)
+    CallLogEntry("3", null, "09359998877", System.currentTimeMillis() - 1000 * 60 * 60 * 26, CallLog.Calls.MISSED_TYPE),
+    CallLogEntry("4", "دفتر تابلو سازان", "02188889900", System.currentTimeMillis() - 1000 * 60 * 60 * 28, CallLog.Calls.INCOMING_TYPE)
 )
 
 @Preview(name = "پیش‌نمایش شیت انتخاب تماس", showBackground = true)

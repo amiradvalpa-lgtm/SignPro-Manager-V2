@@ -116,6 +116,50 @@ object CallLogHelper {
     }
 
     /**
+     * Formats call time as HH:mm in Persian digits.
+     */
+    fun formatCallTime(timestamp: Long?): String {
+        if (timestamp == null || timestamp <= 0L) return ""
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
+        val hour = String.format(java.util.Locale.US, "%02d", cal.get(java.util.Calendar.HOUR_OF_DAY))
+        val min = String.format(java.util.Locale.US, "%02d", cal.get(java.util.Calendar.MINUTE))
+        return FormatUtils.toPersianDigits("$hour:$min")
+    }
+
+    /**
+     * Returns date grouping key (e.g. 1404/08/15).
+     */
+    fun getCallDateKey(timestamp: Long?): String {
+        if (timestamp == null || timestamp <= 0L) return ""
+        return JalaliDate.fromMillis(timestamp).formatShort()
+    }
+
+    /**
+     * Formats group date header (e.g. "امروز - ۲۴ مرداد ۱۴۰۴" or "دیروز - ۲۳ مرداد ۱۴۰۴" or "۲۲ مرداد ۱۴۰۴").
+     */
+    fun formatCallGroupDate(timestamp: Long?): String {
+        if (timestamp == null || timestamp <= 0L) return ""
+        val nowCal = java.util.Calendar.getInstance()
+        val itemCal = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
+
+        val isToday = nowCal.get(java.util.Calendar.YEAR) == itemCal.get(java.util.Calendar.YEAR) &&
+                nowCal.get(java.util.Calendar.DAY_OF_YEAR) == itemCal.get(java.util.Calendar.DAY_OF_YEAR)
+
+        val yesterdayCal = java.util.Calendar.getInstance().apply { add(java.util.Calendar.DAY_OF_YEAR, -1) }
+        val isYesterday = yesterdayCal.get(java.util.Calendar.YEAR) == itemCal.get(java.util.Calendar.YEAR) &&
+                yesterdayCal.get(java.util.Calendar.DAY_OF_YEAR) == itemCal.get(java.util.Calendar.DAY_OF_YEAR)
+
+        val jalali = JalaliDate.fromMillis(timestamp)
+        val formattedDate = FormatUtils.toPersianDigits(jalali.formatPersian())
+
+        return when {
+            isToday -> "امروز - $formattedDate"
+            isYesterday -> "دیروز - $formattedDate"
+            else -> formattedDate
+        }
+    }
+
+    /**
      * Retrieves recent call history sorted by date DESC (newest at the top).
      */
     fun getRecentCallLogs(context: Context, limit: Int = 150): List<CallLogEntry> {
