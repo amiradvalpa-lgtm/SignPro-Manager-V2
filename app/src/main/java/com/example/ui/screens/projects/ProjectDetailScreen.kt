@@ -158,6 +158,9 @@ fun ProjectDetailScreen(
                 viewModel.saveProject(entity, isNew) {
                     showProjectEditDialog = false
                 }
+            },
+            onSaveCustomer = { newCust, onDone ->
+                viewModel.saveCustomer(newCust, isNew = true, onDone = onDone)
             }
         )
     }

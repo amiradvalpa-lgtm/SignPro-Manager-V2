@@ -183,6 +183,9 @@ fun ProjectsScreen(
                 viewModel.saveProject(entity, isNew) {
                     showCreateDialog = false
                 }
+            },
+            onSaveCustomer = { newCust, onDone ->
+                viewModel.saveCustomer(newCust, isNew = true, onDone = onDone)
             }
         )
     }
@@ -197,6 +200,9 @@ fun ProjectsScreen(
                 viewModel.saveProject(entity, isNew) {
                     selectedProjectForEdit = null
                 }
+            },
+            onSaveCustomer = { newCust, onDone ->
+                viewModel.saveCustomer(newCust, isNew = true, onDone = onDone)
             }
         )
     }

@@ -378,30 +378,17 @@ private fun CallLogItemRow(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Center: Only Name OR Number
-            if (isNameAvailable) {
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-            } else {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Ltr),
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
+            // Center: Only Name OR Number (aligned right in RTL with normal font weight)
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Normal,
+                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Start,
+                modifier = Modifier.weight(1f)
+            )
 
             Spacer(modifier = Modifier.width(12.dp))
 

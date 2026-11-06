@@ -24,6 +24,7 @@ import com.example.ui.components.common.PersianTextField
 import com.example.ui.components.common.StickyBottomActionBar
 import com.example.ui.components.common.UnsavedChangesDialog
 import com.example.ui.components.common.appOutlinedTextFieldColors
+import com.example.ui.screens.customers.CustomerEditDialog
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.JalaliDate
 import java.util.UUID
@@ -36,11 +37,13 @@ fun ProjectEditDialog(
     preselectedCustomerId: String? = null,
     onDismiss: () -> Unit,
     onSave: (ProjectEntity, Boolean) -> Unit,
-    warnUnsavedChanges: Boolean = true
+    warnUnsavedChanges: Boolean = true,
+    onSaveCustomer: ((CustomerEntity, onDone: () -> Unit) -> Unit)? = null
 ) {
     val isNew = project == null
 
     var title by remember { mutableStateOf(project?.title ?: "") }
+    var localCustomers by remember(customers) { mutableStateOf(customers) }
     var selectedCustomerId by remember {
         mutableStateOf(project?.customerId ?: preselectedCustomerId ?: customers.firstOrNull()?.id ?: "")
     }
@@ -52,6 +55,7 @@ fun ProjectEditDialog(
     var titleError by remember { mutableStateOf<String?>(null) }
     var customerError by remember { mutableStateOf<String?>(null) }
     var showUnsavedDialog by remember { mutableStateOf(false) }
+    var showNewCustomerDialog by remember { mutableStateOf(false) }
 
     val isDirty = remember(title, selectedCustomerId, startDate, description) {
         if (isNew) {
@@ -134,7 +138,7 @@ fun ProjectEditDialog(
             // Customer Selection Dropdown with Search
             CustomerDropdownField(
                 selectedCustomerId = selectedCustomerId,
-                customers = customers,
+                customers = localCustomers,
                 onCustomerSelected = { cust ->
                     selectedCustomerId = cust.id
                     customerError = null
@@ -143,7 +147,10 @@ fun ProjectEditDialog(
                 placeholder = "انتخاب مشتری",
                 isError = customerError != null,
                 errorMessage = customerError,
-                testTag = "project_customer_dropdown"
+                testTag = "project_customer_dropdown",
+                onAddNewCustomer = {
+                    showNewCustomerDialog = true
+                }
             )
 
             // Start Date
@@ -186,6 +193,26 @@ fun ProjectEditDialog(
                 onDismiss()
             },
             onDismiss = { showUnsavedDialog = false }
+        )
+    }
+
+    if (showNewCustomerDialog) {
+        CustomerEditDialog(
+            customer = null,
+            onDismiss = { showNewCustomerDialog = false },
+            existingCustomers = localCustomers,
+            warnUnsavedChanges = warnUnsavedChanges,
+            onSave = { newCust, _ ->
+                if (onSaveCustomer != null) {
+                    onSaveCustomer(newCust) {}
+                }
+                if (localCustomers.none { it.id == newCust.id }) {
+                    localCustomers = listOf(newCust) + localCustomers
+                }
+                selectedCustomerId = newCust.id
+                customerError = null
+                showNewCustomerDialog = false
+            }
         )
     }
 }

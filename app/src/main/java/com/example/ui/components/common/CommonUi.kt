@@ -52,6 +52,25 @@ import com.example.util.JalaliDate
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.ui.draw.rotate
 
 val LocalShowPlaceholders = compositionLocalOf { true }
 
@@ -1435,11 +1454,44 @@ fun AppDropdownField(
     )
 }
 
+
+
+
+
+
+
 /**
- * کنترل اختصاصی انتخاب مشتریان با پشتیبانی از جستجو، چیدمان متوازن
- * (نام در راست، نام مجموعه با سایز کوچک‌تر و فونت معمولی، شماره در چپ)
+ * موقعیت‌دهی Popup دقیقاً زیر فیلد (یا بالای آن در صورت کمبود جا).
+ * جهت باز شدن فقط یک بار در لحظهٔ باز شدن تعیین می‌شود تا هنگام تایپ/باز شدن کیبورد جابه‌جا نشود.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+private class BelowAnchorPositionProvider(
+    private val gapPx: Int,
+    private val maxHeightPx: Int
+) : PopupPositionProvider {
+    private var showAbove: Boolean? = null
+
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        popupContentSize: IntSize
+    ): IntOffset {
+        val spaceBelow = windowSize.height - anchorBounds.bottom
+        val spaceAbove = anchorBounds.top
+        val above = showAbove ?: (spaceBelow < maxHeightPx && spaceAbove > spaceBelow)
+            .also { showAbove = it }
+
+        val y = if (above) anchorBounds.top - popupContentSize.height - gapPx
+        else anchorBounds.bottom + gapPx
+        val x = anchorBounds.left.coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+        return IntOffset(x, y.coerceAtLeast(0))
+    }
+}
+
+/**
+ * کنترل اختصاصی انتخاب مشتری (Popup مستقل زیر فیلد، بدون ExposedDropdownMenu)
+ * فیلد اصلی فقط یک دکمه است؛ جستجو، لیست و «افزودن مشتری جدید» داخل Popup هستند.
+ */
 @Composable
 fun CustomerDropdownField(
     selectedCustomerId: String,
@@ -1450,13 +1502,17 @@ fun CustomerDropdownField(
     isError: Boolean = false,
     errorMessage: String? = null,
     modifier: Modifier = Modifier,
-    testTag: String = "customer_dropdown"
+    testTag: String = "customer_dropdown",
+    onAddNewCustomer: (() -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var anchorWidthPx by remember { mutableIntStateOf(0) }
     val showPlaceholders = LocalShowPlaceholders.current
-    val searchFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val density = LocalDensity.current
+
+    val maxPopupHeight = 340.dp
 
     val selectedCustomer = remember(customers, selectedCustomerId) {
         customers.firstOrNull { it.id == selectedCustomerId }
@@ -1481,24 +1537,24 @@ fun CustomerDropdownField(
         }
     }
 
-    LaunchedEffect(expanded) {
-        if (expanded) {
-            kotlinx.coroutines.delay(120)
-            searchFocusRequester.requestFocus()
-            keyboardController?.show()
-        }
+    fun close() {
+        expanded = false
+        searchQuery = ""
+        keyboardController?.hide()
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
-            modifier = Modifier.fillMaxWidth()
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { anchorWidthPx = it.width }
+                .testTag(testTag)
         ) {
             OutlinedTextField(
                 value = displayValue,
                 onValueChange = {},
                 readOnly = true,
+                singleLine = true,
                 label = { Text(label) },
                 placeholder = if (showPlaceholders && placeholder.isNotEmpty()) {
                     { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)) }
@@ -1510,147 +1566,219 @@ fun CustomerDropdownField(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                trailingIcon = {
+                    val rotation by animateFloatAsState(
+                        targetValue = if (expanded) 180f else 0f,
+                        label = "dropdown_arrow_rotation"
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.rotate(rotation)
+                    )
+                },
                 isError = isError,
                 shape = RoundedCornerShape(14.dp),
                 colors = appOutlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                    .testTag(testTag)
+                modifier = Modifier.fillMaxWidth()
             )
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = {
-                    expanded = false
-                    searchQuery = ""
-                },
-                focusable = true,
+            // لایهٔ شفاف کلیک روی فیلد (فیلد خودش فوکوس/کیبورد نمی‌گیرد)
+            Box(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surface)
-                    .heightIn(max = 340.dp)
-            ) {
-                // Search box with auto-focus
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = {
-                        Text(
-                            "جستجوی نام، نام مجموعه یا تلفن...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    },
-                    trailingIcon = if (searchQuery.isNotEmpty()) {
-                        {
-                            IconButton(
-                                onClick = { searchQuery = "" },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Clear,
-                                    contentDescription = "پاک کردن",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    } else null,
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(searchFocusRequester)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+                    .matchParentSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        role = Role.DropdownList
+                    ) {
+                        if (expanded) close() else expanded = true
+                    }
+            )
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-                )
-
-                if (filteredCustomers.isEmpty()) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                "مشتری با این مشخصات یافت نشد",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        onClick = {},
-                        enabled = false
+            if (expanded) {
+                val positionProvider = remember {
+                    BelowAnchorPositionProvider(
+                        gapPx = with(density) { 4.dp.roundToPx() },
+                        maxHeightPx = with(density) { maxPopupHeight.roundToPx() }
                     )
-                } else {
-                    filteredCustomers.forEach { cust ->
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    // Right side in RTL: Customer Name (Normal font, same size) + Company Name (smaller, normal font)
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = cust.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Normal,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            modifier = Modifier.weight(1f, fill = false)
-                                        )
-                                        if (cust.companyName.isNotBlank()) {
-                                            Text(
-                                                text = "(${cust.companyName})",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Normal,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                modifier = Modifier.weight(1f, fill = false)
+                }
+
+                Popup(
+                    popupPositionProvider = positionProvider,
+                    onDismissRequest = { close() },
+                    properties = PopupProperties(
+                        focusable = true,
+                        dismissOnBackPress = true,
+                        dismissOnClickOutside = true
+                    )
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surface,   // قبلاً surfaceContainer بود
+                        tonalElevation = 0.dp,                        // قبلاً 3.dp بود
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .width(with(density) { anchorWidthPx.toDp() })
+                            .heightIn(max = maxPopupHeight)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            // باکس جستجو (ثابت در بالا)
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = {
+                                    Text(
+                                        "جستجوی نام، نام مجموعه یا تلفن...",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                },
+                                trailingIcon = if (searchQuery.isNotEmpty()) {
+                                    {
+                                        IconButton(
+                                            onClick = { searchQuery = "" },
+                                            modifier = Modifier.size(24.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Clear,
+                                                contentDescription = "پاک کردن",
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
                                     }
+                                } else null,
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedIndicatorColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                ),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .testTag("${testTag}_search")
+                            )
 
-                                    Spacer(modifier = Modifier.width(8.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
 
-                                    // Left side in RTL: Phone number with LTR formatting
-                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                                        Text(
-                                            text = FormatUtils.formatPhoneNumber(cust.phone),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            maxLines = 1
+                            // لیست قابل اسکرول
+                            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                                if (filteredCustomers.isEmpty()) {
+                                    item {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    "مشتری با این مشخصات یافت نشد",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            },
+                                            onClick = {},
+                                            enabled = false
+                                        )
+                                    }
+                                } else {
+                                    items(filteredCustomers, key = { it.id }) { cust ->
+                                        DropdownMenuItem(
+                                            text = {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    // راست (RTL): نام مشتری + نام مجموعه با سایز کوچک‌تر
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Text(
+                                                            text = cust.name,
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            fontWeight = FontWeight.Normal,
+                                                            color = MaterialTheme.colorScheme.onSurface,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis,
+                                                            modifier = Modifier.weight(1f, fill = false)
+                                                        )
+                                                        if (cust.companyName.isNotBlank()) {
+                                                            Text(
+                                                                text = "(${cust.companyName})",
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                fontWeight = FontWeight.Normal,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis,
+                                                                modifier = Modifier.weight(1f, fill = false)
+                                                            )
+                                                        }
+                                                    }
+
+                                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                                    // چپ (RTL): شماره تلفن با چیدمان LTR
+                                                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                                                        Text(
+                                                            text = FormatUtils.formatPhoneNumber(cust.phone),
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            maxLines = 1
+                                                        )
+                                                    }
+                                                }
+                                            },
+                                            onClick = {
+                                                onCustomerSelected(cust)
+                                                close()
+                                            }
                                         )
                                     }
                                 }
-                            },
-                            onClick = {
-                                onCustomerSelected(cust)
-                                expanded = false
-                                searchQuery = ""
                             }
-                        )
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                            )
+
+                            // افزودن مشتری جدید (فعلاً ظاهری)
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "افزودن مشتری جدید",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                },
+                                onClick = {
+                                    close()
+                                    onAddNewCustomer?.invoke()
+                                },
+                                modifier = Modifier.testTag("${testTag}_add_new")
+                            )
+                        }
                     }
                 }
             }
@@ -1666,6 +1794,11 @@ fun CustomerDropdownField(
         }
     }
 }
+
+
+
+
+
 
 /**
  * کنترل انتخاب واحد اقلام فاکتور با استفاده از کامپوننت مشترک AppDropdownField

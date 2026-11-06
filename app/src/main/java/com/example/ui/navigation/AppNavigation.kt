@@ -292,6 +292,9 @@ fun AppNavigation(viewModel: SignageViewModel) {
                 viewModel.saveProject(entity, isNew) {
                     showQuickProjectDialog = false
                 }
+            },
+            onSaveCustomer = { newCust, onDone ->
+                viewModel.saveCustomer(newCust, isNew = true, onDone = onDone)
             }
         )
     }
