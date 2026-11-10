@@ -58,9 +58,11 @@ fun ProjectSpecsScreen(
     )
 
     if (showCreateDialog) {
+        val lastSignType = specs.lastOrNull()?.signType
         SpecEditDialog(
             projectId = projectId,
             spec = null,
+            defaultSignType = lastSignType,
             warnUnsavedChanges = warnUnsaved,
             onDismiss = { showCreateDialog = false },
             onSave = { entity, isNew ->
@@ -89,7 +91,7 @@ fun ProjectSpecsScreen(
         show = specToDelete != null,
         title = "حذف مشخصات تابلو",
         message = "آیا از حذف این ردیف مشخصات تابلو اطمینان دارید؟",
-        itemDetail = specToDelete?.subTitle,
+        itemDetail = specToDelete?.signType,
         onConfirm = {
             specToDelete?.let { sp ->
                 viewModel.deleteSpec(sp) {
@@ -112,6 +114,8 @@ fun ProjectSpecsContent(
     onDeleteSpec: (ProjectSpecEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var revealedSpecId by remember { mutableStateOf<String?>(null) }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -175,6 +179,9 @@ fun ProjectSpecsContent(
                 items(specs, key = { it.id }) { spec ->
                     ProjectSpecItemCard(
                         spec = spec,
+                        isRevealed = (revealedSpecId == spec.id),
+                        onExpanded = { revealedSpecId = spec.id },
+                        onCollapsed = { if (revealedSpecId == spec.id) revealedSpecId = null },
                         onEdit = { onEditSpec(spec) },
                         onDelete = { onDeleteSpec(spec) }
                     )
@@ -191,104 +198,174 @@ fun ProjectSpecsContent(
 @Composable
 fun ProjectSpecItemCard(
     spec: ProjectSpecEntity,
+    isRevealed: Boolean = false,
+    onExpanded: (() -> Unit)? = null,
+    onCollapsed: (() -> Unit)? = null,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    AppCard(modifier = modifier) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-            ) {
-                CardOverflowMenu(
-                    onEdit = onEdit,
-                    onDelete = onDelete
-                )
-            }
-
+    com.example.ui.components.common.SwipeToRevealCard(
+        isRevealed = isRevealed,
+        onExpanded = onExpanded,
+        onCollapsed = onCollapsed,
+        onEdit = onEdit,
+        onDelete = onDelete,
+        modifier = modifier.testTag("spec_item_${spec.id}")
+    ) {
+        AppCard(onClick = onEdit) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(14.dp)
-                    .padding(end = 28.dp)
             ) {
-                Text(
-                    text = spec.subTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = spec.signType,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Dimension display in centimeters
+                // Main Upper Row: Right side (material name & dimensions) | Left side (attached image)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Text(
-                        text = "طول: ${spec.lengthCm} سانتی‌متر",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "عرض: ${spec.widthCm} سانتی‌متر",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (spec.depthCm > 0) {
+                    // Right Column (Start in RTL):
+                    // Top: Material name without chip in bold font
+                    // Bottom: Dimensions, each strictly in a separate row: طول، ارتفاع، عمق
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = "عمق: ${spec.depthCm} سانتی‌متر",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = spec.signType,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                    }
-                }
 
-                if (spec.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "توضیحات: ${spec.description}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                        Spacer(modifier = Modifier.height(2.dp))
 
-                // Attachments preview
-                val uris = spec.attachmentUris.split(",").filter { it.isNotBlank() }
-                if (uris.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(uris) { uriStr ->
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
+                        // Length row
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "طول:",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${spec.lengthCm} سانتی‌متر",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Height row (ارتفاع)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "ارتفاع:",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${spec.widthCm} سانتی‌متر",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Depth row (عمق)
+                        if (spec.depthCm > 0) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(uriStr),
-                                    contentDescription = "طرح ضمیمه",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
+                                Text(
+                                    text = "عمق:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${spec.depthCm} سانتی‌متر",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
+                    }
+
+                    // Left Column (End in RTL): Attached image thumbnail
+                    val uris = remember(spec.attachmentUris) {
+                        spec.attachmentUris.split(",").filter { it.isNotBlank() }
+                    }
+                    if (uris.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(width = 72.dp, height = 72.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(uris.first()),
+                                contentDescription = "طرح ضمیمه",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            if (uris.size > 1) {
+                                Surface(
+                                    color = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.65f),
+                                    shape = RoundedCornerShape(topStart = 8.dp),
+                                    modifier = Modifier.align(Alignment.BottomEnd)
+                                ) {
+                                    Text(
+                                        text = "+${uris.size - 1}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = androidx.compose.ui.graphics.Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Last line: Description (اگر توضیحات بود توضیحات باشه)
+                if (spec.description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "توضیحات:",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = spec.description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }

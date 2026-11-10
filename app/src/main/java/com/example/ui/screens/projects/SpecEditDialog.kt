@@ -48,6 +48,7 @@ import java.util.UUID
 fun SpecEditDialog(
     projectId: String,
     spec: ProjectSpecEntity?,
+    defaultSignType: String? = null,
     warnUnsavedChanges: Boolean = true,
     onDismiss: () -> Unit,
     onSave: (ProjectSpecEntity, Boolean) -> Unit
@@ -55,8 +56,9 @@ fun SpecEditDialog(
     val context = LocalContext.current
     val isNew = spec == null
 
-    var subTitle by remember { mutableStateOf(spec?.subTitle ?: "") }
-    var signType by remember { mutableStateOf(spec?.signType ?: "چلنیوم طلایی") }
+    var signType by remember {
+        mutableStateOf(spec?.signType ?: defaultSignType ?: "چلنیوم طلایی (پایه)")
+    }
     var lengthStr by remember { mutableStateOf(if (spec != null) spec.lengthCm.toString() else "") }
     var widthStr by remember { mutableStateOf(if (spec != null) spec.widthCm.toString() else "") }
     var depthStr by remember { mutableStateOf(if (spec != null) spec.depthCm.toString() else "0") }
@@ -66,7 +68,6 @@ fun SpecEditDialog(
         mutableStateOf(spec?.attachmentUris?.split(",")?.filter { it.isNotBlank() } ?: emptyList())
     }
 
-    var subTitleError by remember { mutableStateOf<String?>(null) }
     var signTypeError by remember { mutableStateOf<String?>(null) }
     var lengthError by remember { mutableStateOf<String?>(null) }
     var widthError by remember { mutableStateOf<String?>(null) }
@@ -90,10 +91,14 @@ fun SpecEditDialog(
     val isDirty by remember {
         derivedStateOf {
             if (spec == null) {
-                subTitle.isNotBlank() || lengthStr.isNotBlank() || widthStr.isNotBlank() || attachmentUris.isNotEmpty()
+                lengthStr.isNotBlank() ||
+                        widthStr.isNotBlank() ||
+                        (depthStr.isNotBlank() && depthStr != "0") ||
+                        description.isNotBlank() ||
+                        attachmentUris.isNotEmpty() ||
+                        (defaultSignType != null && signType != defaultSignType)
             } else {
-                subTitle != spec.subTitle ||
-                        signType != spec.signType ||
+                signType != spec.signType ||
                         lengthStr != spec.lengthCm.toString() ||
                         widthStr != spec.widthCm.toString() ||
                         depthStr != spec.depthCm.toString() ||
@@ -125,35 +130,64 @@ fun SpecEditDialog(
         }
     }
 
-    // Camera capture
-    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    // Camera capture with runtime permission & rememberSaveable
+    var tempCameraUriString by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success: Boolean ->
-        if (success && tempCameraUri != null) {
+        if (success && tempCameraUriString != null) {
             val newUris = attachmentUris.toMutableList()
-            newUris.add(tempCameraUri.toString())
+            newUris.add(tempCameraUriString!!)
             attachmentUris = newUris
         }
     }
 
-    fun launchCamera() {
+    val launchCameraInternal = {
         try {
             val photoDir = File(context.cacheDir, "camera_photos").apply { mkdirs() }
             val photoFile = File(photoDir, "spec_${System.currentTimeMillis()}.jpg")
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
-            tempCameraUri = uri
+            tempCameraUriString = uri.toString()
             cameraLauncher.launch(uri)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(
+                context,
+                "خطا در باز کردن دوربین: ${e.localizedMessage ?: "دوربین در دسترس نیست"}",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            launchCameraInternal()
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                "برای عکاسی مستقیم از تابلو، تأیید دسترسی به دوربین الزامی است.",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    fun launchCamera() {
+        val hasPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.CAMERA
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (hasPermission) {
+            launchCameraInternal()
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
     val executeSave = {
         var hasError = false
-        if (subTitle.trim().isEmpty()) {
-            subTitleError = "عنوان زیرمجموعه الزامی است."
-            hasError = true
-        }
         if (signType.trim().isEmpty()) {
             signTypeError = "نوع تابلو الزامی است."
             hasError = true
@@ -165,14 +199,15 @@ fun SpecEditDialog(
         }
         val w = widthStr.toDoubleOrNull()
         if (w == null || w <= 0) {
-            widthError = "عرض نامعتبر است."
+            widthError = "ارتفاع نامعتبر است."
             hasError = true
         }
         val d = depthStr.toDoubleOrNull() ?: 0.0
 
         if (!hasError) {
+            val subTitleValue = spec?.subTitle.takeIf { !it.isNullOrBlank() } ?: signType.trim()
             val entity = spec?.copy(
-                subTitle = subTitle.trim(),
+                subTitle = subTitleValue,
                 signType = signType.trim(),
                 lengthCm = l ?: 0.0,
                 widthCm = w ?: 0.0,
@@ -182,7 +217,7 @@ fun SpecEditDialog(
             ) ?: ProjectSpecEntity(
                 id = UUID.randomUUID().toString(),
                 projectId = projectId,
-                subTitle = subTitle.trim(),
+                subTitle = subTitleValue,
                 signType = signType.trim(),
                 lengthCm = l ?: 0.0,
                 widthCm = w ?: 0.0,
@@ -210,20 +245,7 @@ fun SpecEditDialog(
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            PersianTextField(
-                value = subTitle,
-                onValueChange = {
-                    subTitle = it
-                    subTitleError = null
-                },
-                label = "عنوان بخش یا زیرمجموعه تابلو",
-                placeholder = "مثال: حروف اصلی سردر، لوگوی گرد، لایت‌باکس ورودی",
-                isError = subTitleError != null,
-                errorMessage = subTitleError,
-                testTag = "spec_subtitle_input"
-            )
-
-            // Sign Type Dropdown
+            // Row 1: Sign Type Dropdown (First row as requested)
             AppDropdownField(
                 value = signType,
                 onValueChange = {
@@ -242,7 +264,7 @@ fun SpecEditDialog(
                 testTag = "spec_signtype_dropdown"
             )
 
-            // Dimensions in 3 separate rows with fixed "سانتی‌متر" suffix
+            // Row 2: Dimensions in 1 single row (طول، ارتفاع، عمق) with cm prefix on the right
             Text(
                 text = "ابعاد تابلو",
                 style = MaterialTheme.typography.titleSmall,
@@ -252,98 +274,100 @@ fun SpecEditDialog(
 
             val showPlaceholders = LocalShowPlaceholders.current
 
-            // Row 1: Length
-            OutlinedTextField(
-                value = lengthStr,
-                onValueChange = {
-                    lengthStr = it
-                    lengthError = null
-                },
-                label = { Text("طول") },
-                placeholder = if (showPlaceholders) {
-                    { Text("مثال: ۳۵۰") }
-                } else null,
-                trailingIcon = {
-                    Text(
-                        text = "سانتی‌متر",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = lengthError != null,
-                supportingText = if (lengthError != null) {
-                    { Text(lengthError ?: "", color = MaterialTheme.colorScheme.error) }
-                } else null,
-                shape = RoundedCornerShape(14.dp),
-                colors = appOutlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("spec_length_input")
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Length (طول)
+                OutlinedTextField(
+                    value = lengthStr,
+                    onValueChange = {
+                        lengthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                        lengthError = null
+                    },
+                    label = { Text("طول") },
+                    placeholder = if (showPlaceholders) {
+                        { Text("۳۵۰") }
+                    } else null,
+                    prefix = {
+                        Text(
+                            text = "cm ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        )
+                    },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = lengthError != null,
+                    supportingText = if (lengthError != null) {
+                        { Text(lengthError ?: "", color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = appOutlinedTextFieldColors(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("spec_length_input")
+                )
 
-            // Row 2: Width
-            OutlinedTextField(
-                value = widthStr,
-                onValueChange = {
-                    widthStr = it
-                    widthError = null
-                },
-                label = { Text("عرض") },
-                placeholder = if (showPlaceholders) {
-                    { Text("مثال: ۱۲۰") }
-                } else null,
-                trailingIcon = {
-                    Text(
-                        text = "سانتی‌متر",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = widthError != null,
-                supportingText = if (widthError != null) {
-                    { Text(widthError ?: "", color = MaterialTheme.colorScheme.error) }
-                } else null,
-                shape = RoundedCornerShape(14.dp),
-                colors = appOutlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("spec_width_input")
-            )
+                // Height/Width (ارتفاع)
+                OutlinedTextField(
+                    value = widthStr,
+                    onValueChange = {
+                        widthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                        widthError = null
+                    },
+                    label = { Text("ارتفاع") },
+                    placeholder = if (showPlaceholders) {
+                        { Text("۱۲۰") }
+                    } else null,
+                    prefix = {
+                        Text(
+                            text = "cm ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        )
+                    },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = widthError != null,
+                    supportingText = if (widthError != null) {
+                        { Text(widthError ?: "", color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = appOutlinedTextFieldColors(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("spec_width_input")
+                )
 
-            // Row 3: Depth
-            OutlinedTextField(
-                value = depthStr,
-                onValueChange = {
-                    depthStr = it
-                    depthError = null
-                },
-                label = { Text("عمق") },
-                placeholder = if (showPlaceholders) {
-                    { Text("مثال: ۸") }
-                } else null,
-                trailingIcon = {
-                    Text(
-                        text = "سانتی‌متر",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(end = 12.dp)
-                    )
-                },
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Number),
-                isError = depthError != null,
-                supportingText = if (depthError != null) {
-                    { Text(depthError ?: "", color = MaterialTheme.colorScheme.error) }
-                } else null,
-                shape = RoundedCornerShape(14.dp),
-                colors = appOutlinedTextFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("spec_depth_input")
-            )
+                // Depth (عمق)
+                OutlinedTextField(
+                    value = depthStr,
+                    onValueChange = {
+                        depthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                        depthError = null
+                    },
+                    label = { Text("عمق") },
+                    placeholder = if (showPlaceholders) {
+                        { Text("۸") }
+                    } else null,
+                    prefix = {
+                        Text(
+                            text = "cm ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+                        )
+                    },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    isError = depthError != null,
+                    supportingText = if (depthError != null) {
+                        { Text(depthError ?: "", color = MaterialTheme.colorScheme.error) }
+                    } else null,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = appOutlinedTextFieldColors(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("spec_depth_input")
+                )
+            }
 
             PersianTextField(
                 value = description,
