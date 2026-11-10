@@ -88,6 +88,7 @@
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectEditDialog.kt` | فرم شیت ایجاد/ویرایش سفارش | تنظیم عنوان سفارش، انتخاب مشتری، نوع تابلو، تاریخ تحویل و مرحله اولیه. |
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectSpecsScreen.kt` | صفحه مشخصات فنی ساخت تابلو | ثبت ابعاد (طول، ارتفاع، عمق)، متریال حروف، نورپردازی، منبع تغذیه (SMPS) و زیرسازی. |
 | `/app/src/main/java/com/example/ui/screens/projects/SpecEditDialog.kt` | فرم شیت افزودن مشخصه فنی | ورود اطلاعات فنی اختصاصی هر بخش تابلو با اعتبارسنجی مقادیر. |
+| `/app/src/main/java/com/example/ui/screens/projects/SpecImageViewerDialog.kt` | دیالوگ تمام‌صفحه نمایش و زوم تصاویر | نمایش تمام‌صفحه تصویر طرح تابلو با امکان زوم دو انگشتی (Pinch-to-zoom)، حرکت (Pan)، دوبار لمس، اشتراک‌گذاری سیستمی و باز کردن در گالری. |
 | `/app/src/main/java/com/example/ui/screens/projects/ProjectInvoiceScreen.kt` | صفحه صورتحساب و اقلام فاکتور | محاسبه خودکار متراژ محیطی، تعداد، قیمت واحد، تخفیف، مالیات و خروجی فاکتور PDF. |
 | `/app/src/main/java/com/example/ui/screens/contracts/InvoiceItemEditDialog.kt` | فرم شیت ردیف قلم فاکتور | افزودن ردیف‌های اقلام تابلو با امکان تعیین واحد، مقدار، نرخ و توضیحات فنی. |
 | `/app/src/main/java/com/example/ui/screens/contracts/ContractsScreen.kt` | صفحه فهرست قراردادهای کارگاه | مرور قراردادهای رسمی امضا شده و فیلتر قراردادها بر اساس وضعیت پروژه. |

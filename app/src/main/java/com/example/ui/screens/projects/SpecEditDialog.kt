@@ -33,7 +33,14 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -71,6 +78,7 @@ fun SpecEditDialog(
 ) {
     val context = LocalContext.current
     val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
     val isNew = spec == null
 
     var signType by remember {
@@ -80,10 +88,19 @@ fun SpecEditDialog(
     // Dimension inputs as TextFieldValue to support select-all on focus
     var lengthField by remember {
         mutableStateOf(
-            androidx.compose.ui.text.input.TextFieldValue(
+            TextFieldValue(
                 text = if (spec != null) formatDimension(spec.lengthCm) else ""
             )
         )
+    }
+
+    fun selectAll(field: TextFieldValue, update: (TextFieldValue) -> Unit) {
+        if (field.text.isNotEmpty()) {
+            coroutineScope.launch {
+                delay(60)
+                update(field.copy(selection = TextRange(0, field.text.length)))
+            }
+        }
     }
     var widthField by remember {
         mutableStateOf(
@@ -362,10 +379,17 @@ fun SpecEditDialog(
                     modifier = Modifier
                         .weight(1f)
                         .onFocusChanged { focusState ->
-                            if (focusState.isFocused && lengthField.text.isNotEmpty()) {
-                                lengthField = lengthField.copy(
-                                    selection = TextRange(0, lengthField.text.length)
-                                )
+                            if (focusState.isFocused) {
+                                selectAll(lengthField) { lengthField = it }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(pass = PointerEventPass.Initial)
+                                val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                if (up != null) {
+                                    selectAll(lengthField) { lengthField = it }
+                                }
                             }
                         }
                         .testTag("spec_length_input")
@@ -418,10 +442,17 @@ fun SpecEditDialog(
                     modifier = Modifier
                         .weight(1f)
                         .onFocusChanged { focusState ->
-                            if (focusState.isFocused && widthField.text.isNotEmpty()) {
-                                widthField = widthField.copy(
-                                    selection = TextRange(0, widthField.text.length)
-                                )
+                            if (focusState.isFocused) {
+                                selectAll(widthField) { widthField = it }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(pass = PointerEventPass.Initial)
+                                val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                if (up != null) {
+                                    selectAll(widthField) { widthField = it }
+                                }
                             }
                         }
                         .testTag("spec_width_input")
@@ -474,10 +505,17 @@ fun SpecEditDialog(
                     modifier = Modifier
                         .weight(1f)
                         .onFocusChanged { focusState ->
-                            if (focusState.isFocused && depthField.text.isNotEmpty()) {
-                                depthField = depthField.copy(
-                                    selection = TextRange(0, depthField.text.length)
-                                )
+                            if (focusState.isFocused) {
+                                selectAll(depthField) { depthField = it }
+                            }
+                        }
+                        .pointerInput(Unit) {
+                            awaitEachGesture {
+                                awaitFirstDown(pass = PointerEventPass.Initial)
+                                val up = waitForUpOrCancellation(pass = PointerEventPass.Initial)
+                                if (up != null) {
+                                    selectAll(depthField) { depthField = it }
+                                }
                             }
                         }
                         .testTag("spec_depth_input")

@@ -2,6 +2,7 @@ package com.example.ui.screens.projects
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -47,6 +48,7 @@ fun ProjectSpecsScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedSpecForEdit by remember { mutableStateOf<ProjectSpecEntity?>(null) }
     var specToDelete by remember { mutableStateOf<ProjectSpecEntity?>(null) }
+    var viewingImageUriAndTitle by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     ProjectSpecsContent(
         projectTitle = project?.title,
@@ -54,8 +56,17 @@ fun ProjectSpecsScreen(
         onBack = onBack,
         onAddSpec = { showCreateDialog = true },
         onEditSpec = { spec -> selectedSpecForEdit = spec },
-        onDeleteSpec = { spec -> specToDelete = spec }
+        onDeleteSpec = { spec -> specToDelete = spec },
+        onImageClick = { uri, title -> viewingImageUriAndTitle = Pair(uri, title) }
     )
+
+    viewingImageUriAndTitle?.let { (uri, title) ->
+        SpecImageViewerDialog(
+            imageUri = uri,
+            title = title,
+            onDismiss = { viewingImageUriAndTitle = null }
+        )
+    }
 
     if (showCreateDialog) {
         val lastSignType = specs.lastOrNull()?.signType
@@ -112,6 +123,7 @@ fun ProjectSpecsContent(
     onAddSpec: () -> Unit,
     onEditSpec: (ProjectSpecEntity) -> Unit,
     onDeleteSpec: (ProjectSpecEntity) -> Unit,
+    onImageClick: (String, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     var revealedSpecId by remember { mutableStateOf<String?>(null) }
@@ -183,7 +195,8 @@ fun ProjectSpecsContent(
                         onExpanded = { revealedSpecId = spec.id },
                         onCollapsed = { if (revealedSpecId == spec.id) revealedSpecId = null },
                         onEdit = { onEditSpec(spec) },
-                        onDelete = { onDeleteSpec(spec) }
+                        onDelete = { onDeleteSpec(spec) },
+                        onImageClick = onImageClick
                     )
                 }
 
@@ -245,6 +258,7 @@ fun ProjectSpecItemCard(
     onCollapsed: (() -> Unit)? = null,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onImageClick: ((String, String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     com.example.ui.components.common.SwipeToRevealCard(
@@ -312,6 +326,11 @@ fun ProjectSpecItemCard(
                                     width = 1.dp,
                                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
                                     shape = RoundedCornerShape(12.dp)
+                                )
+                                .then(
+                                    if (onImageClick != null) {
+                                        Modifier.clickable { onImageClick(uris.first(), spec.signType) }
+                                    } else Modifier
                                 )
                         ) {
                             Image(
