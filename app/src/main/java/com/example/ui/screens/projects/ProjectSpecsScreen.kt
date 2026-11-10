@@ -195,6 +195,48 @@ fun ProjectSpecsContent(
     }
 }
 
+private fun formatDimension(value: Double): String {
+    return if (value % 1.0 == 0.0) {
+        value.toLong().toString()
+    } else {
+        value.toString()
+    }
+}
+
+@Composable
+private fun DimensionRow(
+    label: String,
+    value: String,
+    unit: String = "سانتی‌متر"
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Column 1: Label (fixed width for column alignment)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(46.dp)
+        )
+        // Column 2: Value (minimum width so unit starts at aligned position)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.widthIn(min = 44.dp)
+        )
+        // Column 3: Unit
+        Text(
+            text = unit,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+        )
+    }
+}
+
 @Composable
 fun ProjectSpecItemCard(
     spec: ProjectSpecEntity,
@@ -219,15 +261,17 @@ fun ProjectSpecItemCard(
                     .fillMaxWidth()
                     .padding(14.dp)
             ) {
-                // Main Upper Row: Right side (material name & dimensions) | Left side (attached image)
+                // Main Upper Row: Right side (material name & tabular dimensions) | Left side (proportional image)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Right Column (Start in RTL):
                     // Top: Material name without chip in bold font
-                    // Bottom: Dimensions, each strictly in a separate row: طول، ارتفاع، عمق
+                    // Bottom: Dimensions, aligned strictly into columns (عناوین، اعداد، سانتی‌متر)
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -242,66 +286,18 @@ fun ProjectSpecItemCard(
                         Spacer(modifier = Modifier.height(2.dp))
 
                         // Length row
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "طول:",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "${spec.lengthCm} سانتی‌متر",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        DimensionRow(label = "طول:", value = formatDimension(spec.lengthCm))
 
                         // Height row (ارتفاع)
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "ارتفاع:",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "${spec.widthCm} سانتی‌متر",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        DimensionRow(label = "ارتفاع:", value = formatDimension(spec.widthCm))
 
                         // Depth row (عمق)
                         if (spec.depthCm > 0) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "عمق:",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "${spec.depthCm} سانتی‌متر",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            DimensionRow(label = "عمق:", value = formatDimension(spec.depthCm))
                         }
                     }
 
-                    // Left Column (End in RTL): Attached image thumbnail
+                    // Left Column (End in RTL): Attached image thumbnail matching upper card height in both width & height
                     val uris = remember(spec.attachmentUris) {
                         spec.attachmentUris.split(",").filter { it.isNotBlank() }
                     }
@@ -309,7 +305,8 @@ fun ProjectSpecItemCard(
                         Spacer(modifier = Modifier.width(12.dp))
                         Box(
                             modifier = Modifier
-                                .size(width = 72.dp, height = 72.dp)
+                                .fillMaxHeight()
+                                .aspectRatio(1f)
                                 .clip(RoundedCornerShape(12.dp))
                                 .border(
                                     width = 1.dp,

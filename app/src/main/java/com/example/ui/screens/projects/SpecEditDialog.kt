@@ -25,8 +25,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -43,6 +50,15 @@ import com.example.ui.theme.MyApplicationTheme
 import java.io.File
 import java.util.UUID
 
+private fun formatDimension(value: Double?): String {
+    if (value == null) return ""
+    return if (value % 1.0 == 0.0) {
+        value.toLong().toString()
+    } else {
+        value.toString()
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpecEditDialog(
@@ -54,14 +70,35 @@ fun SpecEditDialog(
     onSave: (ProjectSpecEntity, Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
     val isNew = spec == null
 
     var signType by remember {
         mutableStateOf(spec?.signType ?: defaultSignType ?: "چلنیوم طلایی (پایه)")
     }
-    var lengthStr by remember { mutableStateOf(if (spec != null) spec.lengthCm.toString() else "") }
-    var widthStr by remember { mutableStateOf(if (spec != null) spec.widthCm.toString() else "") }
-    var depthStr by remember { mutableStateOf(if (spec != null) spec.depthCm.toString() else "0") }
+    
+    // Dimension inputs as TextFieldValue to support select-all on focus
+    var lengthField by remember {
+        mutableStateOf(
+            androidx.compose.ui.text.input.TextFieldValue(
+                text = if (spec != null) formatDimension(spec.lengthCm) else ""
+            )
+        )
+    }
+    var widthField by remember {
+        mutableStateOf(
+            androidx.compose.ui.text.input.TextFieldValue(
+                text = if (spec != null) formatDimension(spec.widthCm) else ""
+            )
+        )
+    }
+    var depthField by remember {
+        mutableStateOf(
+            androidx.compose.ui.text.input.TextFieldValue(
+                text = if (spec != null && spec.depthCm > 0) formatDimension(spec.depthCm) else ""
+            )
+        )
+    }
     var description by remember { mutableStateOf(spec?.description ?: "") }
 
     var attachmentUris by remember {
@@ -91,17 +128,17 @@ fun SpecEditDialog(
     val isDirty by remember {
         derivedStateOf {
             if (spec == null) {
-                lengthStr.isNotBlank() ||
-                        widthStr.isNotBlank() ||
-                        (depthStr.isNotBlank() && depthStr != "0") ||
+                lengthField.text.isNotBlank() ||
+                        widthField.text.isNotBlank() ||
+                        depthField.text.isNotBlank() ||
                         description.isNotBlank() ||
                         attachmentUris.isNotEmpty() ||
                         (defaultSignType != null && signType != defaultSignType)
             } else {
                 signType != spec.signType ||
-                        lengthStr != spec.lengthCm.toString() ||
-                        widthStr != spec.widthCm.toString() ||
-                        depthStr != spec.depthCm.toString() ||
+                        lengthField.text != formatDimension(spec.lengthCm) ||
+                        widthField.text != formatDimension(spec.widthCm) ||
+                        depthField.text != (if (spec.depthCm > 0) formatDimension(spec.depthCm) else "") ||
                         description != spec.description ||
                         attachmentUris.joinToString(",") != spec.attachmentUris
             }
@@ -192,17 +229,17 @@ fun SpecEditDialog(
             signTypeError = "نوع تابلو الزامی است."
             hasError = true
         }
-        val l = lengthStr.toDoubleOrNull()
+        val l = lengthField.text.toDoubleOrNull()
         if (l == null || l <= 0) {
             lengthError = "طول نامعتبر است."
             hasError = true
         }
-        val w = widthStr.toDoubleOrNull()
+        val w = widthField.text.toDoubleOrNull()
         if (w == null || w <= 0) {
             widthError = "ارتفاع نامعتبر است."
             hasError = true
         }
-        val d = depthStr.toDoubleOrNull() ?: 0.0
+        val d = depthField.text.toDoubleOrNull() ?: 0.0
 
         if (!hasError) {
             val subTitleValue = spec?.subTitle.takeIf { !it.isNullOrBlank() } ?: signType.trim()
@@ -280,9 +317,22 @@ fun SpecEditDialog(
             ) {
                 // Length (طول)
                 OutlinedTextField(
-                    value = lengthStr,
-                    onValueChange = {
-                        lengthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                    value = lengthField,
+                    onValueChange = { newVal ->
+                        val raw = newVal.text
+                        val filtered = com.example.util.FormatUtils.toEnglishDigits(raw).filter { ch -> ch.isDigit() || ch == '.' }
+                        val clean = if (filtered.count { it == '.' } > 1) {
+                            val firstDot = filtered.indexOf('.')
+                            filtered.filterIndexed { index, c -> c != '.' || index == firstDot }
+                        } else filtered
+
+                        lengthField = if (clean != raw) {
+                            val diff = clean.length - raw.length
+                            val newPos = (newVal.selection.end + diff).coerceIn(0, clean.length)
+                            androidx.compose.ui.text.input.TextFieldValue(clean, androidx.compose.ui.text.TextRange(newPos))
+                        } else {
+                            newVal
+                        }
                         lengthError = null
                     },
                     label = { Text("طول") },
@@ -296,7 +346,13 @@ fun SpecEditDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                         )
                     },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     isError = lengthError != null,
                     supportingText = if (lengthError != null) {
                         { Text(lengthError ?: "", color = MaterialTheme.colorScheme.error) }
@@ -305,14 +361,34 @@ fun SpecEditDialog(
                     colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .weight(1f)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused && lengthField.text.isNotEmpty()) {
+                                lengthField = lengthField.copy(
+                                    selection = TextRange(0, lengthField.text.length)
+                                )
+                            }
+                        }
                         .testTag("spec_length_input")
                 )
 
                 // Height/Width (ارتفاع)
                 OutlinedTextField(
-                    value = widthStr,
-                    onValueChange = {
-                        widthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                    value = widthField,
+                    onValueChange = { newVal ->
+                        val raw = newVal.text
+                        val filtered = com.example.util.FormatUtils.toEnglishDigits(raw).filter { ch -> ch.isDigit() || ch == '.' }
+                        val clean = if (filtered.count { it == '.' } > 1) {
+                            val firstDot = filtered.indexOf('.')
+                            filtered.filterIndexed { index, c -> c != '.' || index == firstDot }
+                        } else filtered
+
+                        widthField = if (clean != raw) {
+                            val diff = clean.length - raw.length
+                            val newPos = (newVal.selection.end + diff).coerceIn(0, clean.length)
+                            TextFieldValue(clean, TextRange(newPos))
+                        } else {
+                            newVal
+                        }
                         widthError = null
                     },
                     label = { Text("ارتفاع") },
@@ -326,7 +402,13 @@ fun SpecEditDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                         )
                     },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     isError = widthError != null,
                     supportingText = if (widthError != null) {
                         { Text(widthError ?: "", color = MaterialTheme.colorScheme.error) }
@@ -335,14 +417,34 @@ fun SpecEditDialog(
                     colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .weight(1f)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused && widthField.text.isNotEmpty()) {
+                                widthField = widthField.copy(
+                                    selection = TextRange(0, widthField.text.length)
+                                )
+                            }
+                        }
                         .testTag("spec_width_input")
                 )
 
                 // Depth (عمق)
                 OutlinedTextField(
-                    value = depthStr,
-                    onValueChange = {
-                        depthStr = com.example.util.FormatUtils.toEnglishDigits(it).filter { ch -> ch.isDigit() || ch == '.' }
+                    value = depthField,
+                    onValueChange = { newVal ->
+                        val raw = newVal.text
+                        val filtered = com.example.util.FormatUtils.toEnglishDigits(raw).filter { ch -> ch.isDigit() || ch == '.' }
+                        val clean = if (filtered.count { it == '.' } > 1) {
+                            val firstDot = filtered.indexOf('.')
+                            filtered.filterIndexed { index, c -> c != '.' || index == firstDot }
+                        } else filtered
+
+                        depthField = if (clean != raw) {
+                            val diff = clean.length - raw.length
+                            val newPos = (newVal.selection.end + diff).coerceIn(0, clean.length)
+                            TextFieldValue(clean, TextRange(newPos))
+                        } else {
+                            newVal
+                        }
                         depthError = null
                     },
                     label = { Text("عمق") },
@@ -356,7 +458,13 @@ fun SpecEditDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                         )
                     },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { focusManager.clearFocus() }
+                    ),
                     isError = depthError != null,
                     supportingText = if (depthError != null) {
                         { Text(depthError ?: "", color = MaterialTheme.colorScheme.error) }
@@ -365,6 +473,13 @@ fun SpecEditDialog(
                     colors = appOutlinedTextFieldColors(),
                     modifier = Modifier
                         .weight(1f)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused && depthField.text.isNotEmpty()) {
+                                depthField = depthField.copy(
+                                    selection = TextRange(0, depthField.text.length)
+                                )
+                            }
+                        }
                         .testTag("spec_depth_input")
                 )
             }
