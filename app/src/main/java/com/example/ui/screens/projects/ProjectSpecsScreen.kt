@@ -42,6 +42,7 @@ fun ProjectSpecsScreen(
     onBack: () -> Unit
 ) {
     val project by viewModel.repository.getProjectByIdFlow(projectId).collectAsState(initial = null)
+    val customer by viewModel.repository.getCustomerByIdFlow(project?.customerId ?: "").collectAsState(initial = null)
     val specs by viewModel.getSpecsForProject(projectId).collectAsState(initial = emptyList())
     val warnUnsaved by viewModel.warnUnsavedChanges.collectAsState()
 
@@ -64,6 +65,9 @@ fun ProjectSpecsScreen(
         SpecImageViewerDialog(
             imageUri = uri,
             title = title,
+            projectName = project?.title,
+            customerName = customer?.name,
+            isOrphaned = false,
             onDismiss = { viewingImageUriAndTitle = null }
         )
     }
@@ -72,6 +76,8 @@ fun ProjectSpecsScreen(
         val lastSignType = specs.lastOrNull()?.signType
         SpecEditDialog(
             projectId = projectId,
+            projectTitle = project?.title,
+            customerName = customer?.name,
             spec = null,
             defaultSignType = lastSignType,
             warnUnsavedChanges = warnUnsaved,
@@ -87,6 +93,8 @@ fun ProjectSpecsScreen(
     selectedSpecForEdit?.let { sp ->
         SpecEditDialog(
             projectId = projectId,
+            projectTitle = project?.title,
+            customerName = customer?.name,
             spec = sp,
             warnUnsavedChanges = warnUnsaved,
             onDismiss = { selectedSpecForEdit = null },
@@ -219,33 +227,33 @@ private fun formatDimension(value: Double): String {
 @Composable
 private fun DimensionRow(
     label: String,
-    value: String,
-    unit: String = "سانتی‌متر"
+    value: String
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Column 1: Label (fixed width for column alignment)
+        // Column 1 (Right in RTL): Label
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(46.dp)
+            modifier = Modifier.width(44.dp)
         )
-        // Column 2: Value (minimum width so unit starts at aligned position)
+        // Column 2 (Middle in RTL): Unit "cm" immediately after label
+        Text(
+            text = "cm",
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            modifier = Modifier.width(28.dp)
+        )
+        // Column 3 (Left in RTL): Value
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.widthIn(min = 44.dp)
-        )
-        // Column 3: Unit
-        Text(
-            text = unit,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -275,17 +283,15 @@ fun ProjectSpecItemCard(
                     .fillMaxWidth()
                     .padding(14.dp)
             ) {
-                // Main Upper Row: Right side (material name & tabular dimensions) | Left side (proportional image)
+                // Main Upper Row: Right side (material name & tabular dimensions) | Left side (controlled thumbnail)
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Right Column (Start in RTL):
                     // Top: Material name without chip in bold font
-                    // Bottom: Dimensions, aligned strictly into columns (عناوین، اعداد، سانتی‌متر)
+                    // Bottom: Dimensions, aligned strictly into columns (عناوین، cm، اعداد)
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -311,7 +317,7 @@ fun ProjectSpecItemCard(
                         }
                     }
 
-                    // Left Column (End in RTL): Attached image thumbnail matching upper card height in both width & height
+                    // Left Column (End in RTL): Attached image thumbnail with fixed controlled 82dp size
                     val uris = remember(spec.attachmentUris) {
                         spec.attachmentUris.split(",").filter { it.isNotBlank() }
                     }
@@ -319,8 +325,7 @@ fun ProjectSpecItemCard(
                         Spacer(modifier = Modifier.width(12.dp))
                         Box(
                             modifier = Modifier
-                                .fillMaxHeight()
-                                .aspectRatio(1f)
+                                .size(82.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .border(
                                     width = 1.dp,

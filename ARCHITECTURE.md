@@ -460,6 +460,21 @@
      - دکمه باز کردن تصویر در گالری پیش‌فرض سیستم اندروید (`Intent.ACTION_VIEW`).
      - اتصال کلیک روی کادر تصویر کارت مشخصات تابلو به باز شدن این دیالوگ.
 
+#### تصمیم ADR-039: معماری پایدار تصاویر ضمیمه، مهار اندازه تامبنیل، ستون‌بندی cm و مرکز جامع مدیریت تصاویر در تنظیمات
+- **وضعیت:** تصویب شده
+- **مسئله:**
+  1. تصاویر انتخاب‌شده از گالری پس از بستن برنامه به دلیل موقت بودن مجوز URI ابزار Photo Picker اندروید ناپدید می‌شدند.
+  2. کادر تامبنیل تصویر در کارت مشخصات تابلو به دلیل ارزیابی `IntrinsicSize.Min` و ابعاد بالای تصویر اصلی، به اندازه نامحدود باز می‌شد و سایر متون کارت را محو می‌کرد.
+  3. نیاز به حذف عبارت «سانتی‌متر» و استفاده از «cm» در ستون دوم بلافاصله پس از عنوان، و سپس مقادیر عددی.
+  4. لزوم نگهداری تصاویر در پوشه اختصاصی برنامه بدون پاکسازی خودکار با حذف مشخصات، جهت بازبینی در تنظیمات.
+  5. نیاز به یک صفحه مستقل تمام‌صفحه در تنظیمات با ۲ تب جهت تفکیک تصاویر متصل و بدون اتصال به پروژه، استخراج و نمایش هوشمند نام کارفرما و پروژه اولیه روی تصاویر، امکان ذخیره در گالری گوشی و دکمه حذف دائمی فایل برای تصاویر بدون اتصال جهت آزادسازی حافظه.
+- **تصمیم:**
+  1. پیاده‌سازی `FileStorageHelper`: کپی جریانی فایل‌ها از گالری و دوربین به پوشه امن داخلی `filesDir/spec_attachments` با فرمت نام‌گذاری غنی متادیتا (`ATTACH_p[projectId]_[projectTitle]_c[customerName]_[timestamp].jpg`) جهت تثبیت هویت تصاویر حتی در صورت حذف رکورد از دیتابیس.
+  2. تثبیت قطعی اندازه تامبنیل کارت مشخصات به `Modifier.size(82.dp)` با گوشه‌های گرد و حذف `height(IntrinsicSize.Min)` برای جلوگیری ۱۰۰٪ از هرگونه بازشدن نامطلوب کادر.
+  3. بازطراحی `DimensionRow` با ساختار ۳ ستونی تراز شده: ستون ۱ (راست): عنوان بعد با عرض ۴۴dp، ستون ۲ (وسط): «cm» با عرض ۲۸dp، ستون ۳ (چپ): مقدار عددی.
+  4. ارتقای `SpecImageViewerDialog`: نمایش نام کارفرما، نام پروژه و بج وضعیت اتصال، دکمه ذخیره در گالری با `MediaStore` و دکمه حذف دائمی از حافظه برای فایل‌های بدون اتصال با دیالوگ تأیید.
+  5. پیاده‌سازی صفحه تمام‌صفحه `SpecAttachmentsSettingsScreen` در پکیج تنظیمات با ۲ تب، آمار حجم کل فایل‌ها، کارت‌های گرید و اتصال به منوی اصلی تنظیمات.
+
 ---
 
 ### ۳. ساختار پکیج‌ها و وظایف
@@ -467,13 +482,14 @@
 - `com.example.MainActivity`: اکتیویتی اصلی برنامه میزبان کامپوز، لایه سراسری `SheetEffectHost` و سیستم بارها.
 - `com.example.ui.components.common.SheetEffect`: ماژول مرکزی مدیریت افکت بلور، لایه Scrim، سوپروایزر شیت‌های سفارشی و تنظیمات پایدار مودال‌ها.
 - `com.example.ui.screens.crash.CrashReportActivity`: صفحه اختصاصی نمایش و اشتراک‌گذاری کرش در صورت بروز خطای ناشناخته.
-- `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`، `BlurTestSettingsScreen`).
+- `com.example.ui.screens.settings`: صفحات تمام‌صفحه تنظیمات (`TrashSettingsScreen`، `AuditLogsSettingsScreen`، `ExpenseCategoriesSettingsScreen`، `ProjectStagesSettingsScreen`، `BackupRestoreSettingsScreen`، `DatabaseManagementSettingsScreen`، `SpecAttachmentsSettingsScreen`، `BlurTestSettingsScreen`).
 - `com.example.ui.screens.customers`: صفحه مدیریت مشتریان (`CustomersScreen`)، جزئیات پرونده (`CustomerDetailScreen`)، فرم ثبت/ویرایش (`CustomerEditDialog`) و شیت انتخاب از تاریخچه تماس (`CallLogPickerSheet`).
 - `com.example.ui.screens.projects`: صفحه پروژه‌ها (`ProjectsScreen`)، جزئیات پروژه (`ProjectDetailScreen`)، مودال تاگل مراحل (`ProjectStagesToggleSheet`)، ماشین کمکی وضعیت (`ProjectStatusHelper`)، دیالوگ ویرایش، مشخصات و فاکتور پروژه.
 - `com.example.ui.screens.dashboard`: صفحه داشبورد اصلی برنامه (`DashboardScreen`) شامل دکمه‌های دسترسی سریع، کارت‌های دو ستونه مالی و کارگاهی و پیش‌نمایش‌های جامع.
 - `com.example.data.preferences`: مدیریت ماندگاری تنظیمات برنامه، پوسته، رنگ، تدابیر امنیتی و پارامترهای افکت مودال (`AppPreferences`).
 - `com.example.data.local`: انتیتی‌ها، دیتابیس Room و نمونه داده‌های اولیه تابلوسازی.
-- `com.example.util`: ابزارهای کمکی (تبدیل تاریخ جلالی، ابزار تاریخچه تماس CallLogHelper، تولید PDF فاکتور، پشتیبان‌گیری، رمزنگاری و ثبت کرش).
+- `com.example.util`: ابزارهای کمکی (تبدیل تاریخ جلالی، ابزار تاریخچه تماس CallLogHelper، ابزار FileStorageHelper، تولید PDF فاکتور، پشتیبان‌گیری، رمزنگاری و ثبت کرش).
+
 
 
 

@@ -17,6 +17,7 @@
 | `/build.gradle.kts` | اسکریپت بیلد ریشه پروژه | تعریف پلاگین‌های سراسری اندروید و کاتلین در سطح پروژه. |
 | `/settings.gradle.kts` | تنظیمات مخازن و ماژول‌ها | تعیین نام پروژه (`Alpa Signage Manager`) و مخازن Maven Central و Google. |
 | `/gradle.properties` | تنظیمات حافظه و اجرای Gradle | پیکربندی بهینه‌سازی JVM، فشرده‌سازی بیلد و فعال‌سازی AndroidX. |
+| `/NEXTJS_SPECIFICATION.md` | مستندات معماری و مهاجرت به وب (Next.js) | مرجع جامع پایگاه داده Prisma، مدل‌ها، نقش‌های کاربری (RBAC)، منطق کسب‌وکار، استانداردهای UI و پرامپت آماده برای نسخه وب Next.js. |
 | `/.env.example` | الگوی متغیرهای محیطی | راهنمای پیکربندی متغیرهای امنیتی و کلیدهای مورد نیاز در صورت نیاز. |
 | `/.gitignore` | نادیده‌گیری فایل‌های موقت گیت | جلوگیری از کامیت فایل‌های موقت، پوشه‌های بیلد (`build/`, `.gradle/`) و کش‌ها. |
 
@@ -102,6 +103,7 @@
 | `/app/src/main/java/com/example/ui/screens/settings/ProjectStagesSettingsSheet.kt` | صفحه مستقل مدیریت مراحل پروژه | مدیریت پویای مراحل سفارش با قابلیت تغییر ترتیب، نام و کد رنگی مرحله. |
 | `/app/src/main/java/com/example/ui/screens/settings/BackupRestoreSettingsSheet.kt` | صفحه مستقل پشتیبان‌گیری و بازیابی | ایجاد فایل پشتیبان رمزنگاری‌شده، بازگردانی پایگاه داده و اشتراک فایل پشتیبان. |
 | `/app/src/main/java/com/example/ui/screens/settings/DatabaseManagementSettingsSheet.kt` | صفحه مستقل مدیریت دیتابیس و نمونه | بازنشانی دیتابیس کارگاه، پاکسازی داده‌ها و بارگذاری مجدد اطلاعات نمونه کارگاهی. |
+| `/app/src/main/java/com/example/ui/screens/settings/SpecAttachmentsSettingsScreen.kt` | صفحه تمام‌صفحه مدیریت تصاویر ضمیمه و آزادسازی حافظه | نمایش تب‌بندی‌شده تصاویر متصل و بدون اتصال پروژه‌ها، آمار حجم حافظه، مشاهده بزرگ، ذخیره در گالری و حذف فیزیکی فایل‌ها. |
 | `/app/src/main/java/com/example/ui/screens/settings/BlurTestSettingsScreen.kt` | صفحه آزمایشی تست افکت بلور | محیط آزمایشی بررسی ساختار سه‌لایه مودال (لایه ۱ ModalBottomSheet، لایه ۲ Scrim، لایه ۳ بلور فرم زیرین). |
 | `/app/src/main/java/com/example/ui/screens/auth/LoginScreen.kt` | صفحه قفل و احراز هویت | ورود با پین‌کد اختصاصی یا حسگر اثر انگشت/تشخیص چهره بیومتریک برای امنیت اطلاعات مالی. |
 | `/app/src/main/java/com/example/ui/screens/crash/CrashReportActivity.kt` | اکتیویتی اختصاصی گزارش خطا (Crash) | نمایش جزئیات فنی کرش، امکان کپی گزارش و اشتراک‌گذاری با توسعه‌دهنده بدون بسته‌شدن ناگهانی برنامه. |
@@ -121,6 +123,7 @@
 #### ۴.۸. ماژول‌ها و ابزارهای کاربردی (`/app/src/main/java/com/example/util/`)
 | مسیر کامل نسبی | وظیفه و کاربرد | مسئولیت اصلی و ارتباط با سایر بخش‌ها |
 | :--- | :--- | :--- |
+| `/app/src/main/java/com/example/util/FileStorageHelper.kt` | ابزار مدیریت پایدار فایل‌ها و تصاویر ضمیمه | کپی جریانی تصاویر به حافظه اختصاصی برنامه، نام‌گذاری متادیتا، اسکن فایل‌های متصل/آزاد، صادرات به گالری و حذف فیزیکی. |
 | `/app/src/main/java/com/example/util/CallLogHelper.kt` | ابزار استعلام تاریخچه تماس‌های اندروید | بررسی دسترسی READ_CALL_LOG و استخراج جدیدترین تاریخ تماس ثبت‌شده با هر شماره تلفن و تبدیل به تاریخ جلالی. |
 | `/app/src/main/java/com/example/util/JalaliDate.kt` | گاه‌شماری و محاسبات تاریخ جلالی | تبدیل تاریخ میلادی به هجری شمسی بدون وابستگی به java.time با پشتیبانی از API 24 به بالا. |
 | `/app/src/main/java/com/example/util/FormatUtils.kt` | فرمت‌بندی اعداد و مبالغ پولی | جداسازی ۳ رقمی ارقام، تبدیل ارقام به فارسی، برچسب‌های پولی و تبدیل اعداد به حروف. |

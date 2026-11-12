@@ -112,6 +112,9 @@ interface ProjectDao {
     fun getActiveProjectCount(): Flow<Int>
 
     // Project Specs
+    @Query("SELECT * FROM project_specs WHERE isDeleted = 0 ORDER BY createdAt ASC")
+    fun getAllActiveSpecs(): Flow<List<ProjectSpecEntity>>
+
     @Query("SELECT * FROM project_specs WHERE projectId = :projectId AND isDeleted = 0 ORDER BY createdAt ASC")
     fun getSpecsForProject(projectId: String): Flow<List<ProjectSpecEntity>>
 

@@ -70,6 +70,8 @@ private fun formatDimension(value: Double?): String {
 @Composable
 fun SpecEditDialog(
     projectId: String,
+    projectTitle: String? = null,
+    customerName: String? = null,
     spec: ProjectSpecEntity?,
     defaultSignType: String? = null,
     warnUnsavedChanges: Boolean = true,
@@ -170,37 +172,62 @@ fun SpecEditDialog(
         }
     }
 
-    // Android zero-permission Photo Picker
+    // Android zero-permission Photo Picker - immediately copies to app internal storage
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 5)
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            val newUris = attachmentUris.toMutableList()
-            uris.forEach { u ->
-                val str = u.toString()
-                if (!newUris.contains(str)) newUris.add(str)
+            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                val copiedUris = mutableListOf<String>()
+                uris.forEach { u ->
+                    val internalUri = com.example.util.FileStorageHelper.saveImageToInternalStorage(
+                        context = context,
+                        sourceUri = u,
+                        projectId = projectId,
+                        projectTitle = projectTitle ?: "پروژه",
+                        customerName = customerName ?: "کارفرما"
+                    )
+                    if (internalUri != null) {
+                        copiedUris.add(internalUri.toString())
+                    }
+                }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    if (copiedUris.isNotEmpty()) {
+                        val newUris = attachmentUris.toMutableList()
+                        copiedUris.forEach { str ->
+                            if (!newUris.contains(str)) newUris.add(str)
+                        }
+                        attachmentUris = newUris
+                    }
+                }
             }
-            attachmentUris = newUris
         }
     }
 
-    // Camera capture with runtime permission & rememberSaveable
+    // Camera capture directly into app internal storage
+    var tempCameraFile by remember { mutableStateOf<File?>(null) }
     var tempCameraUriString by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success: Boolean ->
-        if (success && tempCameraUriString != null) {
+        if (success && tempCameraFile != null) {
+            val fileUri = Uri.fromFile(tempCameraFile)
             val newUris = attachmentUris.toMutableList()
-            newUris.add(tempCameraUriString!!)
+            newUris.add(fileUri.toString())
             attachmentUris = newUris
         }
     }
 
     val launchCameraInternal = {
         try {
-            val photoDir = File(context.cacheDir, "camera_photos").apply { mkdirs() }
-            val photoFile = File(photoDir, "spec_${System.currentTimeMillis()}.jpg")
+            val photoFile = com.example.util.FileStorageHelper.createInternalCameraFile(
+                context = context,
+                projectId = projectId,
+                projectTitle = projectTitle ?: "پروژه",
+                customerName = customerName ?: "کارفرما"
+            )
+            tempCameraFile = photoFile
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
             tempCameraUriString = uri.toString()
             cameraLauncher.launch(uri)

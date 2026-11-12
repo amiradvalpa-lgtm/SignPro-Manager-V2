@@ -161,6 +161,8 @@ class SignageRepository(private val database: AppDatabase) {
         logAudit("Project", id, "DELETE", "حذف پروژه: $projectTitle", currentUserId)
     }
 
+    fun getAllActiveSpecs(): Flow<List<ProjectSpecEntity>> = projectDao.getAllActiveSpecs()
+
     fun getSpecsForProject(projectId: String): Flow<List<ProjectSpecEntity>> = projectDao.getSpecsForProject(projectId)
 
     suspend fun getSpecsForProjectOnce(projectId: String): List<ProjectSpecEntity> = projectDao.getSpecsForProjectOnce(projectId)

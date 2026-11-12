@@ -44,6 +44,7 @@ enum class SettingsSubScreen {
     DATABASE_MANAGEMENT,
     TRASH,
     AUDIT_LOGS,
+    SPEC_ATTACHMENTS,
     BLUR_TEST
 }
 
@@ -67,6 +68,14 @@ fun SettingsScreen(
     val recentAudits by viewModel.recentAudits.collectAsState()
     val warnUnsavedChanges by viewModel.warnUnsavedChanges.collectAsState()
     val showPlaceholders by viewModel.showPlaceholders.collectAsState()
+    val allSpecs by viewModel.allSpecs.collectAsState()
+    val allProjects by viewModel.projects.collectAsState()
+    val allCustomers by viewModel.customers.collectAsState()
+    var attachmentsRefreshKey by remember { mutableIntStateOf(0) }
+
+    val (attachedAttachments, unattachedAttachments) = remember(allSpecs, allProjects, allCustomers, attachmentsRefreshKey) {
+        com.example.util.FileStorageHelper.scanAttachments(context, allSpecs, allProjects, allCustomers)
+    }
 
     var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
 
@@ -90,6 +99,7 @@ fun SettingsScreen(
                 backupCount = backupList.size,
                 trashCount = trashItems.size,
                 auditsCount = recentAudits.size,
+                attachmentsCount = attachedAttachments.size + unattachedAttachments.size,
                 onBack = onBack,
                 onEditContractor = { showContractorDialog = true },
                 onSetCurrency = { viewModel.setCurrencyUnit(it) },
@@ -101,6 +111,7 @@ fun SettingsScreen(
                 onOpenProjectStages = { currentSubScreen = SettingsSubScreen.PROJECT_STAGES },
                 onOpenTrash = { currentSubScreen = SettingsSubScreen.TRASH },
                 onOpenAuditLogs = { currentSubScreen = SettingsSubScreen.AUDIT_LOGS },
+                onOpenSpecAttachments = { currentSubScreen = SettingsSubScreen.SPEC_ATTACHMENTS },
                 onTogglePin = { checked ->
                     val user = currentUser
                     viewModel.updateSecuritySettings(
@@ -212,6 +223,18 @@ fun SettingsScreen(
                 onBack = { currentSubScreen = SettingsSubScreen.MAIN }
             )
         }
+        SettingsSubScreen.SPEC_ATTACHMENTS -> {
+            SpecAttachmentsSettingsScreen(
+                attachedItems = attachedAttachments,
+                unattachedItems = unattachedAttachments,
+                onBack = { currentSubScreen = SettingsSubScreen.MAIN },
+                onDeleteFile = { item ->
+                    com.example.util.FileStorageHelper.deletePhysicalFile(item.file)
+                    attachmentsRefreshKey++
+                    Toast.makeText(context, "فایل با موفقیت از حافظه برنامه حذف شد.", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
     }
 
     // Contractor Info Dialog
@@ -265,6 +288,7 @@ fun SettingsContent(
     backupCount: Int,
     trashCount: Int,
     auditsCount: Int,
+    attachmentsCount: Int = 0,
     onBack: () -> Unit,
     onEditContractor: () -> Unit,
     onSetCurrency: (String) -> Unit,
@@ -276,6 +300,7 @@ fun SettingsContent(
     onOpenProjectStages: () -> Unit,
     onOpenTrash: () -> Unit,
     onOpenAuditLogs: () -> Unit,
+    onOpenSpecAttachments: () -> Unit = {},
     onTogglePin: (Boolean) -> Unit,
     onToggleBiometric: (Boolean) -> Unit,
     onEditUserSecurity: () -> Unit,
@@ -717,6 +742,37 @@ fun SettingsContent(
                                 Column {
                                     Text("مدیریت دیتابیس و داده‌های فرضی", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                                     Text("پاک‌سازی اطلاعات فرضی و راه‌اندازی برای کار واقعی کارگاه", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+
+                        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+
+                        // Spec Attachments & Storage Management
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onOpenSpecAttachments() }
+                                .padding(vertical = 4.dp)
+                                .testTag("spec_attachments_settings_row"),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.size(38.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("مدیریت تصاویر ضمیمه و آزادسازی حافظه", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                    Text("مشاهده تمام عکس‌ها، تفکیک فایل‌های متصل و بدون اتصال ($attachmentsCount فایل)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Icon(Icons.Default.ChevronLeft, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
