@@ -137,6 +137,10 @@ class SignageRepository(private val database: AppDatabase) {
     // -------------------------------------------------------------
     fun getAllProjects(): Flow<List<ProjectEntity>> = projectDao.getAllProjects()
 
+    fun getAllProjectsRaw(): Flow<List<ProjectEntity>> = projectDao.getAllProjectsRaw()
+
+    fun getAllCustomersRaw(): Flow<List<CustomerEntity>> = customerDao.getAllCustomersRaw()
+
     fun getProjectsForCustomer(customerId: String): Flow<List<ProjectEntity>> = projectDao.getProjectsForCustomer(customerId)
 
     fun getProjectByIdFlow(id: String): Flow<ProjectEntity?> = projectDao.getProjectByIdFlow(id)
@@ -162,6 +166,8 @@ class SignageRepository(private val database: AppDatabase) {
     }
 
     fun getAllActiveSpecs(): Flow<List<ProjectSpecEntity>> = projectDao.getAllActiveSpecs()
+
+    fun getAllSpecsRaw(): Flow<List<ProjectSpecEntity>> = projectDao.getAllSpecsRaw()
 
     fun getSpecsForProject(projectId: String): Flow<List<ProjectSpecEntity>> = projectDao.getSpecsForProject(projectId)
 

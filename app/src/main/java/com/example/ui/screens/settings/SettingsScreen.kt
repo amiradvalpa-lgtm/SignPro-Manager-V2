@@ -71,10 +71,23 @@ fun SettingsScreen(
     val allSpecs by viewModel.allSpecs.collectAsState()
     val allProjects by viewModel.projects.collectAsState()
     val allCustomers by viewModel.customers.collectAsState()
+    val allSpecsRaw by viewModel.allSpecsRaw.collectAsState()
+    val allProjectsRaw by viewModel.allProjectsRaw.collectAsState()
+    val allCustomersRaw by viewModel.allCustomersRaw.collectAsState()
     var attachmentsRefreshKey by remember { mutableIntStateOf(0) }
 
-    val (attachedAttachments, unattachedAttachments) = remember(allSpecs, allProjects, allCustomers, attachmentsRefreshKey) {
-        com.example.util.FileStorageHelper.scanAttachments(context, allSpecs, allProjects, allCustomers)
+    val (attachedAttachments, unattachedAttachments) = remember(
+        allSpecs, allProjects, allCustomers, allSpecsRaw, allProjectsRaw, allCustomersRaw, attachmentsRefreshKey
+    ) {
+        com.example.util.FileStorageHelper.scanAttachments(
+            context = context,
+            allSpecs = allSpecs,
+            allProjects = allProjects,
+            allCustomers = allCustomers,
+            rawSpecs = allSpecsRaw,
+            rawProjects = allProjectsRaw,
+            rawCustomers = allCustomersRaw
+        )
     }
 
     var currentSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }

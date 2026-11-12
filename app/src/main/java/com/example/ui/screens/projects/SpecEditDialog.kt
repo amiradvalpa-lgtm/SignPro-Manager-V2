@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -185,7 +186,8 @@ fun SpecEditDialog(
                         sourceUri = u,
                         projectId = projectId,
                         projectTitle = projectTitle ?: "پروژه",
-                        customerName = customerName ?: "کارفرما"
+                        customerName = customerName ?: "کارفرما",
+                        signType = signType
                     )
                     if (internalUri != null) {
                         copiedUris.add(internalUri.toString())
@@ -225,7 +227,8 @@ fun SpecEditDialog(
                 context = context,
                 projectId = projectId,
                 projectTitle = projectTitle ?: "پروژه",
-                customerName = customerName ?: "کارفرما"
+                customerName = customerName ?: "کارفرما",
+                signType = signType
             )
             tempCameraFile = photoFile
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
@@ -606,12 +609,13 @@ fun SpecEditDialog(
                                 modifier = Modifier
                                     .size(72.dp)
                                     .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
                             ) {
                                 Image(
                                     painter = rememberAsyncImagePainter(uriStr),
                                     contentDescription = "طرح ضمیمه",
-                                    contentScale = ContentScale.Crop,
+                                    contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize()
                                 )
                                 IconButton(

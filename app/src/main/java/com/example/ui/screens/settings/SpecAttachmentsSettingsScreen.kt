@@ -55,6 +55,8 @@ fun SpecAttachmentsSettingsScreen(
     var selectedItemForViewer by remember { mutableStateOf<SpecAttachmentItem?>(null) }
     var itemToDeleteDirectly by remember { mutableStateOf<SpecAttachmentItem?>(null) }
 
+    val currentList = if (selectedTab == 0) attachedItems else unattachedItems
+
     val totalFiles = attachedItems.size + unattachedItems.size
     val totalBytes = (attachedItems + unattachedItems).sumOf { it.file.length() }
     val totalFormatted = FileStorageHelper.formatFileSize(totalBytes)
@@ -157,8 +159,6 @@ fun SpecAttachmentsSettingsScreen(
             }
 
             // Tab Content
-            val currentList = if (selectedTab == 0) attachedItems else unattachedItems
-
             if (currentList.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -223,10 +223,7 @@ fun SpecAttachmentsSettingsScreen(
                     items(currentList, key = { it.file.absolutePath }) { item ->
                         AttachmentCard(
                             item = item,
-                            onClick = { selectedItemForViewer = item },
-                            onDeleteDirectly = if (!item.isAttached) {
-                                { itemToDeleteDirectly = item }
-                            } else null
+                            onClick = { selectedItemForViewer = item }
                         )
                     }
                 }
@@ -234,17 +231,20 @@ fun SpecAttachmentsSettingsScreen(
         }
     }
 
-    // Full screen zoomable image viewer dialog
+    // Full screen zoomable image viewer dialog with gallery swipe across tab items
     selectedItemForViewer?.let { item ->
+        val indexInList = currentList.indexOfFirst { it.file.absolutePath == item.file.absolutePath }.coerceAtLeast(0)
         SpecImageViewerDialog(
-            imageUri = item.uriString,
-            title = item.signType ?: "طرح ضمیمه",
+            imageUris = currentList.map { it.uriString },
+            initialIndex = indexInList,
+            title = item.signType ?: "مشخصات تابلو",
             projectName = item.projectTitle,
             customerName = item.customerName,
             isOrphaned = !item.isAttached,
             onDeleteFile = if (!item.isAttached) {
-                {
-                    onDeleteFile(item)
+                { deletedUri ->
+                    val toDelete = currentList.find { it.uriString == deletedUri } ?: item
+                    onDeleteFile(toDelete)
                     selectedItemForViewer = null
                 }
             } else null,
@@ -271,8 +271,7 @@ fun SpecAttachmentsSettingsScreen(
 @Composable
 private fun AttachmentCard(
     item: SpecAttachmentItem,
-    onClick: () -> Unit,
-    onDeleteDirectly: (() -> Unit)? = null
+    onClick: () -> Unit
 ) {
     AppCard(
         onClick = onClick,
@@ -280,88 +279,21 @@ private fun AttachmentCard(
             .fillMaxWidth()
             .testTag("attachment_card_${item.file.name}")
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(item.uriString),
+                contentDescription = item.signType ?: item.projectTitle ?: "تصویر ضمیمه",
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(Color.Black.copy(alpha = 0.05f))
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(item.uriString),
-                    contentDescription = item.projectTitle ?: "تصویر ضمیمه",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // File size badge
-                Surface(
-                    color = Color.Black.copy(alpha = 0.65f),
-                    shape = RoundedCornerShape(bottomStart = 8.dp),
-                    modifier = Modifier.align(Alignment.TopEnd)
-                ) {
-                    Text(
-                        text = item.fileSizeFormatted,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-
-                // Delete button for unattached images
-                if (onDeleteDirectly != null) {
-                    IconButton(
-                        onClick = onDeleteDirectly,
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(4.dp)
-                            .size(32.dp)
-                            .background(MaterialTheme.colorScheme.error, RoundedCornerShape(8.dp))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "حذف فایل",
-                            tint = MaterialTheme.colorScheme.onError,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = item.projectTitle ?: "پروژه نامشخص",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                if (!item.customerName.isNullOrBlank()) {
-                    Text(
-                        text = "کارفرما: ${item.customerName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                if (!item.signType.isNullOrBlank()) {
-                    Text(
-                        text = item.signType,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
+                    .fillMaxSize()
+                    .padding(4.dp)
+            )
         }
     }
 }

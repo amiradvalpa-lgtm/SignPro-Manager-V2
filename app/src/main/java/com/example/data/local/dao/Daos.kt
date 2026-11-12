@@ -36,6 +36,9 @@ interface CustomerDao {
     @Query("SELECT COUNT(*) FROM customers")
     suspend fun getRawCustomerCount(): Int
 
+    @Query("SELECT * FROM customers")
+    fun getAllCustomersRaw(): Flow<List<CustomerEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCustomers(customers: List<CustomerEntity>)
 
@@ -135,6 +138,12 @@ interface ProjectDao {
 
     @Query("UPDATE project_specs SET isDeleted = 0, updatedAt = :updatedAt WHERE id = :id")
     suspend fun restoreSpec(id: String, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM projects")
+    fun getAllProjectsRaw(): Flow<List<ProjectEntity>>
+
+    @Query("SELECT * FROM project_specs")
+    fun getAllSpecsRaw(): Flow<List<ProjectSpecEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProjects(projects: List<ProjectEntity>)
