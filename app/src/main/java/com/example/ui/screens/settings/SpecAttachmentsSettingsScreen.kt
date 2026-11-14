@@ -35,6 +35,7 @@ import com.example.ui.components.common.AppTopBar
 import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.components.common.EmptyStateView
 import com.example.ui.screens.projects.SpecImageViewerDialog
+import com.example.ui.screens.projects.SpecViewerImageItem
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.FileStorageHelper
 import com.example.util.SpecAttachmentItem
@@ -235,12 +236,16 @@ fun SpecAttachmentsSettingsScreen(
     selectedItemForViewer?.let { item ->
         val indexInList = currentList.indexOfFirst { it.file.absolutePath == item.file.absolutePath }.coerceAtLeast(0)
         SpecImageViewerDialog(
-            imageUris = currentList.map { it.uriString },
+            imageItems = currentList.map { attachment ->
+                SpecViewerImageItem(
+                    uri = attachment.uriString,
+                    title = attachment.signType ?: "مشخصات تابلو",
+                    projectName = attachment.projectTitle,
+                    customerName = attachment.customerName,
+                    isOrphaned = !attachment.isAttached
+                )
+            },
             initialIndex = indexInList,
-            title = item.signType ?: "مشخصات تابلو",
-            projectName = item.projectTitle,
-            customerName = item.customerName,
-            isOrphaned = !item.isAttached,
             onDeleteFile = if (!item.isAttached) {
                 { deletedUri ->
                     val toDelete = currentList.find { it.uriString == deletedUri } ?: item
@@ -289,10 +294,8 @@ private fun AttachmentCard(
             Image(
                 painter = rememberAsyncImagePainter(item.uriString),
                 contentDescription = item.signType ?: item.projectTitle ?: "تصویر ضمیمه",
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(4.dp)
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }

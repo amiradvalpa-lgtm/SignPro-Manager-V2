@@ -13,10 +13,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -36,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -48,9 +54,19 @@ import com.example.ui.components.common.DeleteConfirmationDialog
 import com.example.ui.theme.MyApplicationTheme
 import com.example.util.FileStorageHelper
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+
+data class SpecViewerImageItem(
+    val uri: String,
+    val title: String? = null,
+    val projectName: String? = null,
+    val customerName: String? = null,
+    val isOrphaned: Boolean = false
+)
 
 @Composable
 fun SpecImageViewerDialog(
+    imageItems: List<SpecViewerImageItem> = emptyList(),
     imageUris: List<String> = emptyList(),
     imageUri: String? = null,
     initialIndex: Int = 0,
@@ -64,21 +80,36 @@ fun SpecImageViewerDialog(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Consolidate image uris list
-    val allUris = remember(imageUris, imageUri) {
-        val list = imageUris.filter { it.isNotBlank() }
-        if (list.isNotEmpty()) list
-        else if (!imageUri.isNullOrBlank()) listOf(imageUri)
-        else emptyList()
+    // Consolidate image items list with per-image metadata support
+    val allItems = remember(imageItems, imageUris, imageUri, title, projectName, customerName, isOrphaned) {
+        val explicit = imageItems.filter { it.uri.isNotBlank() }
+        if (explicit.isNotEmpty()) {
+            explicit
+        } else {
+            val list = imageUris.filter { it.isNotBlank() }
+            val uris = if (list.isNotEmpty()) list
+            else if (!imageUri.isNullOrBlank()) listOf(imageUri)
+            else emptyList()
+            uris.map { uri ->
+                SpecViewerImageItem(
+                    uri = uri,
+                    title = title,
+                    projectName = projectName,
+                    customerName = customerName,
+                    isOrphaned = isOrphaned
+                )
+            }
+        }
     }
 
-    if (allUris.isEmpty()) {
+    if (allItems.isEmpty()) {
         LaunchedEffect(Unit) { onDismiss() }
         return
     }
 
-    val safeInitialIndex = initialIndex.coerceIn(0, allUris.size - 1)
-    val pagerState = rememberPagerState(initialPage = safeInitialIndex, pageCount = { allUris.size })
+    val safeInitialIndex = initialIndex.coerceIn(0, allItems.size - 1)
+    val pagerState = rememberPagerState(initialPage = safeInitialIndex, pageCount = { allItems.size })
+    val thumbnailListState = rememberLazyListState(initialFirstVisibleItemIndex = safeInitialIndex)
 
     // Controls visibility (Default visible, toggleable by tapping on the image)
     var controlsVisible by remember { mutableStateOf(true) }
@@ -87,14 +118,18 @@ fun SpecImageViewerDialog(
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Reset zoom when page changes
+    // Reset zoom and sync thumbnail scroll when page changes
     LaunchedEffect(pagerState.currentPage) {
         scale = 1f
         offset = Offset.Zero
+        if (allItems.size > 1) {
+            thumbnailListState.animateScrollToItem(pagerState.currentPage)
+        }
     }
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-    val currentImageUri = allUris.getOrElse(pagerState.currentPage) { allUris.first() }
+    val currentItem = allItems.getOrElse(pagerState.currentPage) { allItems.first() }
+    val currentImageUri = currentItem.uri
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -114,18 +149,66 @@ fun SpecImageViewerDialog(
                 userScrollEnabled = (scale <= 1.05f),
                 modifier = Modifier.fillMaxSize()
             ) { page ->
-                val uriForPage = allUris[page]
+                val uriForPage = allItems[page].uri
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(page) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(1f, 5f)
-                                if (scale > 1f) {
-                                    offset += pan
-                                } else {
-                                    offset = Offset.Zero
-                                }
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                var zoom = 1f
+                                var pan = Offset.Zero
+                                var pastTouchSlop = false
+                                val touchSlop = viewConfiguration.touchSlop
+
+                                do {
+                                    val event = awaitPointerEvent()
+                                    val canceled = event.changes.any { it.isConsumed }
+                                    if (!canceled) {
+                                        val pointerCount = event.changes.count { it.pressed }
+                                        val zoomChange = event.calculateZoom()
+                                        val panChange = event.calculatePan()
+
+                                        if (!pastTouchSlop) {
+                                            zoom *= zoomChange
+                                            pan += panChange
+
+                                            val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                                            val zoomMotion = abs(1f - zoom) * centroidSize
+                                            val panMotion = pan.getDistance()
+
+                                            if (zoomMotion > touchSlop || panMotion > touchSlop) {
+                                                pastTouchSlop = true
+                                            }
+                                        }
+
+                                        if (pastTouchSlop) {
+                                            // Allow HorizontalPager to handle single-finger swipes when not zoomed in
+                                            val shouldHandleTransform = pointerCount >= 2 || scale > 1.05f
+                                            if (shouldHandleTransform) {
+                                                if (zoomChange != 1f || panChange != Offset.Zero) {
+                                                    val newScale = (scale * zoomChange).coerceIn(1f, 5f)
+                                                    scale = newScale
+                                                    if (newScale > 1.05f) {
+                                                        val maxX = (size.width * (newScale - 1f)) / 2f
+                                                        val maxY = (size.height * (newScale - 1f)) / 2f
+                                                        offset = Offset(
+                                                            x = (offset.x + panChange.x).coerceIn(-maxX, maxX),
+                                                            y = (offset.y + panChange.y).coerceIn(-maxY, maxY)
+                                                        )
+                                                    } else {
+                                                        offset = Offset.Zero
+                                                    }
+                                                }
+                                                event.changes.forEach { change ->
+                                                    if (change.positionChanged()) {
+                                                        change.consume()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                } while (!canceled && event.changes.any { it.pressed })
                             }
                         }
                         .pointerInput(page) {
@@ -139,6 +222,7 @@ fun SpecImageViewerDialog(
                                         offset = Offset.Zero
                                     } else {
                                         scale = 2.5f
+                                        offset = Offset.Zero
                                     }
                                 }
                             )
@@ -200,13 +284,13 @@ fun SpecImageViewerDialog(
                             }
 
                             // Counter indicator when there are multiple images
-                            if (allUris.size > 1) {
+                            if (allItems.size > 1) {
                                 Surface(
                                     color = Color.White.copy(alpha = 0.18f),
                                     shape = CircleShape
                                 ) {
                                     Text(
-                                        text = "${pagerState.currentPage + 1} / ${allUris.size}",
+                                        text = "${pagerState.currentPage + 1} / ${allItems.size}",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
@@ -284,8 +368,8 @@ fun SpecImageViewerDialog(
                             }
                         }
 
-                        // Row 2: Item Name (Title in next row under controls)
-                        val displayTitle = title?.ifBlank { null }
+                        // Row 2: Item Name (Title in next row under controls - updates with current page)
+                        val displayTitle = currentItem.title?.ifBlank { null }
                         if (!displayTitle.isNullOrBlank()) {
                             Text(
                                 text = displayTitle,
@@ -296,9 +380,9 @@ fun SpecImageViewerDialog(
                             )
                         }
 
-                        // Row 3: Metadata chips (Project & Customer)
-                        val displayProj = projectName?.ifBlank { null }
-                        val displayCust = customerName?.ifBlank { null }
+                        // Row 3: Metadata chips (Project & Customer - updates with current page)
+                        val displayProj = currentItem.projectName?.ifBlank { null }
+                        val displayCust = currentItem.customerName?.ifBlank { null }
                         if (!displayProj.isNullOrBlank() || !displayCust.isNullOrBlank()) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -339,7 +423,7 @@ fun SpecImageViewerDialog(
             }
 
             // Bottom Thumbnails Row when multiple images exist (with show/hide animation)
-            if (allUris.size > 1) {
+            if (allItems.size > 1) {
                 AnimatedVisibility(
                     visible = controlsVisible,
                     enter = fadeIn() + slideInVertically { it },
@@ -351,6 +435,7 @@ fun SpecImageViewerDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         LazyRow(
+                            state = thumbnailListState,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .navigationBarsPadding()
@@ -358,7 +443,7 @@ fun SpecImageViewerDialog(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            items(allUris.size) { index ->
+                            items(allItems.size) { index ->
                                 val isSelected = (index == pagerState.currentPage)
                                 Box(
                                     modifier = Modifier
@@ -377,9 +462,9 @@ fun SpecImageViewerDialog(
                                         }
                                 ) {
                                     Image(
-                                        painter = rememberAsyncImagePainter(allUris[index]),
+                                        painter = rememberAsyncImagePainter(allItems[index].uri),
                                         contentDescription = "تصویر شماره ${index + 1}",
-                                        contentScale = ContentScale.Fit,
+                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 }
@@ -396,7 +481,7 @@ fun SpecImageViewerDialog(
             show = true,
             title = "حذف فایل از حافظه برنامه",
             message = "آیا از حذف دائمی این تصویر از حافظه دستگاه اطمینان دارید؟ این فایل قابل بازیابی نخواهد بود.",
-            itemDetail = title ?: projectName,
+            itemDetail = currentItem.title ?: currentItem.projectName,
             onConfirm = {
                 showDeleteConfirmDialog = false
                 onDeleteFile(currentImageUri)
@@ -439,11 +524,20 @@ private fun openInGallery(context: Context, uriStr: String) {
 fun SpecImageViewerDialogPreview() {
     MyApplicationTheme {
         SpecImageViewerDialog(
-            imageUris = listOf("https://example.com/sample1.jpg", "https://example.com/sample2.jpg"),
-            title = "طرح تابلو چلنیوم",
-            projectName = "تابلو فروشگاه پارس",
-            customerName = "علی رضایی",
-            isOrphaned = false,
+            imageItems = listOf(
+                SpecViewerImageItem(
+                    uri = "https://example.com/sample1.jpg",
+                    title = "طرح تابلو چلنیوم",
+                    projectName = "تابلو فروشگاه پارس",
+                    customerName = "علی رضایی"
+                ),
+                SpecViewerImageItem(
+                    uri = "https://example.com/sample2.jpg",
+                    title = "کامپوزیت سردر",
+                    projectName = "نمایندگی پارس",
+                    customerName = "محمد کریمی"
+                )
+            ),
             onDismiss = {}
         )
     }

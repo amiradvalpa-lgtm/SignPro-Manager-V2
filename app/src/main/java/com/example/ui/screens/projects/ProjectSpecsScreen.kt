@@ -327,7 +327,7 @@ fun ProjectSpecItemCard(
                         }
                     }
 
-                    // Left Column (End in RTL): Attached image thumbnail with fixed controlled 82dp size and Fit scale
+                    // Left Column (End in RTL): Attached image thumbnail with fixed controlled 82dp square size and Crop scale
                     val uris = remember(spec.attachmentUris) {
                         spec.attachmentUris.split(",").map { it.trim() }.filter { it.isNotBlank() }
                     }
@@ -352,7 +352,7 @@ fun ProjectSpecItemCard(
                             Image(
                                 painter = rememberAsyncImagePainter(uris.first()),
                                 contentDescription = "طرح ضمیمه",
-                                contentScale = ContentScale.Fit,
+                                contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
                             if (uris.size > 1) {
